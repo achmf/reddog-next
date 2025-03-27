@@ -24,6 +24,7 @@ const config = {
         foreground: "var(--foreground, #ca2028)", // Warna teks default
         white: "#ffffff",
         black: "#000000",
+        navy: "#2B2D4E",
         gray: {
           100: "#f7fafc",
           200: "#edf2f7",
