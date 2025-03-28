@@ -80,10 +80,10 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-10 px-4">
-      <h1 className="text-4xl font-extrabold text-red-500 mb-6">Menu Reddog</h1>
-
-      <div className="w-full max-w-6xl">
+    <div className="min-h-screen flex flex-col py-10 px-4">
+      <h1 className="text-4xl font-extrabold text-red-500 mb-6 self-center">Menu Reddog</h1>
+  
+      <div className="w-full max-w-6xl self-center">
         {categories.map((category) => {
           const categoryMenus = getMenusByCategory(category.key);
           
@@ -92,7 +92,7 @@ export default function MenuPage() {
           ) : null;
         })}
       </div>
-
+  
       {/* Floating Cart Button */}
       {typeof window !== "undefined" && getTotalItems() > 0 && (
         <Link href="/cart">

@@ -17,12 +17,12 @@ export default function RootLayout({
     <html lang="en" className={geistSans.className} suppressHydrationWarning>
       <body className="bg-background text-foreground">
         <CartProvider>
-          <main className="min-h-screen flex flex-col items-center">
+          <main className="min-h-screen flex flex-col">
             {/* Navbar */}
             <Navbar />
 
-            {/* Main Content */}
-            <div>{children}</div>
+            {/* Main Content - Remove items-center and wrap directly */}
+            {children}
 
             {/* Footer */}
             <Footer />

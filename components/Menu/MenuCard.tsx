@@ -16,7 +16,14 @@ export default function MenuCard({ id, name, price, image, category, description
   const cartItem = cart.find((item) => item.id === id);
 
   const handleAddToCart = () => {
-    addToCart({ id, name, price, quantity: 1 });
+    addToCart({ 
+      id, 
+      name, 
+      price, 
+      image, 
+      description,
+      quantity: 1 
+    });
   };
 
   const handleIncreaseQuantity = () => {
@@ -58,7 +65,7 @@ export default function MenuCard({ id, name, price, image, category, description
               <div className="flex justify-center items-center space-x-4">
                 <button
                   onClick={handleDecreaseQuantity}
-                  className="bg-navy text-white px-4 py-2 rounded-lg text-lg font-bold w-12 flex items-center justify-center"
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg text-lg font-bold w-12 flex items-center justify-center"
                 >
                   -
                 </button>
@@ -67,7 +74,7 @@ export default function MenuCard({ id, name, price, image, category, description
                 </div>
                 <button
                   onClick={handleIncreaseQuantity}
-                  className="bg-navy text-white px-4 py-2 rounded-lg text-lg font-bold w-12 flex items-center justify-center"
+                  className="bg-green-500 text-white px-4 py-2 rounded-lg text-lg font-bold w-12 flex items-center justify-center"
                 >
                   +
                 </button>

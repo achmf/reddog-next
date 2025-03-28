@@ -14,6 +14,8 @@ type CartItem = {
   name: string;
   price: string;
   quantity: number;
+  image: string; 
+  description?: string; 
 };
 
 // Define the type for cart context
