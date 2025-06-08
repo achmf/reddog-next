@@ -6,12 +6,12 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/context/CartContext"
-import { ArrowLeft, Trash2, Search, MapPin, ChevronDown, ChevronUp, X } from "lucide-react"
+import { ArrowLeft, Trash2, Search, MapPin, ChevronDown, ChevronUp, X, AlertTriangle, ShoppingCart, Utensils, FileText, User, CreditCard, Lock, Clock } from "lucide-react"
 import MidtransPayment from "@/components/MidtransPayment"
 import { generateOrderId, formatMidtransItems, formatCustomerDetails } from "@/utils/midtrans"
-import { supabase } from "@/utils/supabase/supabaseClient"  // Make sure to import supabase client
+import { supabase } from "@/utils/supabase/supabaseClient"  // Pastikan mengimpor supabase client
 
-// Define outlet type
+// Definisi tipe outlet
 type Outlet = {
   id: string
   name: string
@@ -29,17 +29,17 @@ export default function CartPage() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [paymentToken, setPaymentToken] = useState<string | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
-  const [orderDetails, setOrderDetails] = useState<any>(null) // Store order details temporarily
+  const [orderDetails, setOrderDetails] = useState<any>(null) // Simpan detail order sementara
   const [buyerName, setBuyerName] = useState("")
   const [phoneNumber, setPhoneNumber] = useState("")
   const [email, setEmail] = useState("")
   const [pickupTime, setPickupTime] = useState("")
   const [isAttemptedCheckout, setIsAttemptedCheckout] = useState(false)
-  const [outlets, setOutlets] = useState<Outlet[]>([])  // State for storing fetched outlets
+  const [outlets, setOutlets] = useState<Outlet[]>([])  // State untuk menyimpan outlet yang diambil
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch outlets data from Supabase
+  // Ambil data outlet dari Supabase
   useEffect(() => {
     const fetchOutlets = async () => {
       try {
@@ -48,7 +48,7 @@ export default function CartPage() {
         setOutlets(data || [])
       } catch (err) {
         console.error("Error fetching outlets:", err)
-        setError("Failed to fetch outlets data")
+        setError("Gagal memuat data outlet")
       } finally {
         setLoading(false)
       }
@@ -56,14 +56,14 @@ export default function CartPage() {
     fetchOutlets()
   }, [])
 
-  // Get minimum pickup time (current time + 30 minutes)
+  // Dapatkan waktu pickup minimum (waktu sekarang + 30 menit)
   const getMinPickupTime = () => {
     const now = new Date()
-    now.setMinutes(now.getMinutes() + 30) // Add 30 minutes to current time
-    return now.toISOString().slice(0, 16) // Format as YYYY-MM-DDTHH:MM
+    now.setMinutes(now.getMinutes() + 30) // Tambah 30 menit ke waktu sekarang
+    return now.toISOString().slice(0, 16) // Format sebagai YYYY-MM-DDTHH:MM
   }
 
-  // Filter outlets based on search query
+  // Filter outlet berdasarkan query pencarian
   const filteredOutlets = outlets.filter(
     (outlet) =>
       outlet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -71,7 +71,7 @@ export default function CartPage() {
       outlet.city.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // Close dropdown when clicking outside
+  // Tutup dropdown saat klik di luar
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -85,7 +85,7 @@ export default function CartPage() {
     }
   }, [])
 
-  // Format price to Indonesian Rupiah
+  // Format harga ke Rupiah Indonesia
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -98,27 +98,27 @@ export default function CartPage() {
     setIsAttemptedCheckout(true)
 
     if (!selectedOutlet) {
-      alert("Please select an outlet for pickup")
+      alert("Silakan pilih outlet untuk pickup ya!")
       return
     }
 
     if (!buyerName) {
-      alert("Please enter your name")
+      alert("Jangan lupa masukkan nama kamu!")
       return
     }
 
     if (!phoneNumber) {
-      alert("Please enter your phone number")
+      alert("Nomor HP belum diisi nih!")
       return
     }
 
     if (!email) {
-      alert("Please enter your email")
+      alert("Email kamu belum diisi!")
       return
     }
 
     if (!pickupTime) {
-      alert("Please select a pickup time")
+      alert("Pilih waktu pickup dulu ya!")
       return
     }
 
@@ -158,7 +158,7 @@ export default function CartPage() {
       const data = await response.json()
 
       if (!data.success) {
-        throw new Error(data.message || "Failed to create payment")
+        throw new Error(data.message || "Gagal memproses pembayaran")
       }
 
       // Store order details for later use when payment succeeds
@@ -169,12 +169,12 @@ export default function CartPage() {
     } catch (error) {
       console.error("Checkout error:", error)
       setIsCheckingOut(false)
-      alert(`Error placing order: ${error instanceof Error ? error.message : "Unknown error"}`)
+      alert(`Oops! Ada kesalahan: ${error instanceof Error ? error.message : "Terjadi kesalahan"}`)
     }
   }
 
   const handlePaymentClose = () => {
-    // Payment popup was closed - clear temporary data
+    // Popup pembayaran ditutup - clear data sementara
     setPaymentToken(null)
     setOrderDetails(null) 
     setOrderId(null)
@@ -183,7 +183,7 @@ export default function CartPage() {
 
   const handlePaymentSuccess = async () => {
     try {
-      // Create the order in database after successful payment
+      // Buat order di database setelah pembayaran berhasil
       if (orderDetails) {
         const response = await fetch("/api/orders/create", {
           method: "POST",
@@ -199,7 +199,7 @@ export default function CartPage() {
 
         if (!data.success) {
           console.error("Failed to create order after payment:", data.message)
-          // Still proceed to clear cart and redirect, but log the error
+          // Tetap lanjutkan untuk clear cart dan redirect, tapi log error
         }
       }
 
@@ -211,7 +211,7 @@ export default function CartPage() {
       }
     } catch (error) {
       console.error("Error creating order after payment:", error)
-      // Still clear cart and redirect to avoid user confusion
+      // Tetap clear cart dan redirect untuk menghindari kebingungan user
       clearCart()
       if (orderId) {
         router.push(`/orders/${orderId}`)
@@ -222,8 +222,8 @@ export default function CartPage() {
   }
 
   const handlePaymentPending = () => {
-    // For pending payments, we don't create the order yet
-    // User will be redirected to pending page and order will be created when payment confirms
+    // Untuk pembayaran pending, kita belum buat order dulu
+    // User akan diarahkan ke halaman pending dan order akan dibuat saat pembayaran konfirmasi
     if (orderId) {
       router.push(`/payment/pending?order_id=${orderId}`)
     } else {
@@ -233,7 +233,7 @@ export default function CartPage() {
 
   const handlePaymentError = (error: any) => {
     console.error("Payment error:", error)
-    // Clear temporary data on payment error
+    // Clear data sementara saat error pembayaran
     setPaymentToken(null)
     setOrderDetails(null)
     setOrderId(null)
@@ -257,7 +257,7 @@ export default function CartPage() {
       <div className="min-h-screen bg-gradient-to-br from-red-100 via-white to-yellow-100 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 rounded-full border-4 border-red-400 border-t-transparent animate-spin mx-auto mb-4"></div>
-          <p className="text-lg font-semibold text-red-500">Loading outlets...</p>
+          <p className="text-lg font-semibold text-red-500">Memuat outlet...</p>
         </div>
       </div>
     )
@@ -267,14 +267,16 @@ export default function CartPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-100 via-white to-yellow-100 flex items-center justify-center">
         <div className="text-center max-w-md bg-white rounded-lg shadow-lg p-8">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Oops! Something went wrong</h1>
+          <div className="text-red-500 mb-4 flex justify-center">
+            <AlertTriangle size={64} />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Oops! Ada yang salah nih</h1>
           <p className="text-gray-600 mb-6">{error}</p>
           <button 
             onClick={() => window.location.reload()}
             className="bg-red-500 text-white px-6 py-3 rounded-full hover:bg-red-600 transition"
           >
-            Try Again
+            Coba Lagi
           </button>
         </div>
       </div>
@@ -285,15 +287,19 @@ export default function CartPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-red-100 via-white to-yellow-100 flex flex-col items-center justify-center py-10 px-4">
         <div className="text-center max-w-md bg-white rounded-2xl shadow-xl p-8 border border-red-100">
-          <div className="text-8xl mb-6">🛒</div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">Your Cart is Empty</h1>
-          <p className="text-gray-600 mb-8">Looks like you haven't added any delicious items to your cart yet. Let's change that!</p>
-          <Link href="/menu">
-            <button className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-8 py-4 rounded-full hover:from-red-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-3 font-semibold">
-              <ArrowLeft size={20} />
-              Browse Our Menu
-            </button>
-          </Link>
+          <div className="text-red-500 mb-6 flex justify-center">
+            <ShoppingCart size={80} />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-4">Keranjang Kosong Nih</h1>
+          <p className="text-gray-600 mb-8">Kayaknya belum ada makanan enak yang masuk keranjang. Yuk, pilih menu favoritmu!</p>
+          <div className="flex justify-center">
+            <Link href="/menu">
+              <button className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-8 py-4 rounded-full hover:from-red-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-3 font-semibold">
+                <ArrowLeft size={20} />
+                Lihat Menu Kita
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
     )
@@ -316,13 +322,13 @@ export default function CartPage() {
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-red-100">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent mb-2">Your Cart</h1>
-              <p className="text-gray-600">Review your delicious selections and checkout</p>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent mb-2">Keranjang Kamu</h1>
+              <p className="text-gray-600">Cek lagi pesanan kamu dan lanjut ke pembayaran yuk!</p>
             </div>
             <Link href="/menu">
               <button className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-6 py-3 rounded-full hover:from-red-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 font-semibold">
                 <ArrowLeft size={20} />
-                Continue Shopping
+                Lanjut Belanja
               </button>
             </Link>
           </div>
@@ -333,7 +339,8 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-2xl shadow-xl p-6 border border-red-100">
               <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                🍽️ Your Items ({cart.length})
+                <Utensils size={24} className="text-red-500" />
+                Pesanan Kamu ({cart.length})
               </h2>
               <div className="space-y-4">
                 {cart.map((item) => (
@@ -377,7 +384,7 @@ export default function CartPage() {
                         <button
                           onClick={() => removeFromCart(item.id)}
                           className="text-red-500 hover:text-red-700 p-2 hover:bg-red-100 rounded-full transition-all duration-300"
-                          aria-label="Remove item"
+                          aria-label="Hapus item"
                         >
                           <Trash2 size={20} />
                         </button>
@@ -393,7 +400,8 @@ export default function CartPage() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-4 border border-red-100">
               <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                📝 Order Summary
+                <FileText size={24} className="text-red-500" />
+                Ringkasan Pesanan
               </h2>
 
               {/* Cart Summary */}
@@ -417,73 +425,78 @@ export default function CartPage() {
               {/* Customer Information Form */}
               <div className="space-y-6">
                 <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  👤 Customer Information
+                  <User size={20} className="text-red-500" />
+                  Info Pelanggan
                 </h3>
 
                 {/* Buyer's Name Input */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap *</label>
                   <input
                     type="text"
                     value={buyerName}
                     onChange={(e) => setBuyerName(e.target.value)}
-                    placeholder="Enter your full name"
+                    placeholder="Masukkan nama lengkap kamu"
                     className={`w-full px-4 py-3 border ${!buyerName && isAttemptedCheckout ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300`}
                     required
                   />
                   {!buyerName && isAttemptedCheckout && (
                     <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                      ⚠️ Please enter your full name
+                      <AlertTriangle size={16} />
+                      Jangan lupa isi nama lengkap ya
                     </p>
                   )}
                 </div>
 
                 {/* Phone Number Input */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nomor HP *</label>
                   <input
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="Enter your phone number (e.g., +62812345678)"
+                    placeholder="Masukkan nomor HP (contoh: +62812345678)"
                     className={`w-full px-4 py-3 border ${!phoneNumber && isAttemptedCheckout ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300`}
                     required
                   />
                   {!phoneNumber && isAttemptedCheckout && (
                     <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                      ⚠️ Please enter your phone number
+                      <AlertTriangle size={16} />
+                      Nomor HP belum diisi nih
                     </p>
                   )}
                 </div>
 
                 {/* Email Input */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Alamat Email *</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email address"
+                    placeholder="Masukkan alamat email kamu"
                     className={`w-full px-4 py-3 border ${!email && isAttemptedCheckout ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300`}
                     required
                   />
                   {!email && isAttemptedCheckout && (
                     <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                      ⚠️ Please enter your email address
+                      <AlertTriangle size={16} />
+                      Email belum diisi ya
                     </p>
                   )}
                 </div>
               </div>
 
               {/* Pickup Information */}
-              <div className="space-y-6">
+              <div className="space-y-6 mt-8">
                 <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  📍 Pickup Information
+                  <MapPin size={20} className="text-red-500" />
+                  Info Pickup
                 </h3>
 
                 {/* Outlet Selection Dropdown */}
                 <div ref={dropdownRef}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Pickup Outlet *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Pilih Outlet Pickup *</label>
                   <div className="relative">
                     <div
                       role="button"
@@ -511,7 +524,7 @@ export default function CartPage() {
                               handleClearOutlet(e)
                             }}
                             className="text-gray-400 hover:text-red-500 p-1 hover:bg-red-100 rounded-full transition-all duration-300"
-                            aria-label="Clear selection"
+                            aria-label="Hapus pilihan"
                           >
                             <X size={16} />
                           </button>
@@ -519,7 +532,7 @@ export default function CartPage() {
                       ) : (
                         <span className="text-gray-500 flex items-center gap-2">
                           <MapPin size={16} />
-                          Select a pickup outlet
+                          Pilih outlet pickup
                         </span>
                       )}
                       {isOutletDropdownOpen ? (
@@ -539,7 +552,7 @@ export default function CartPage() {
                             />
                             <input
                               type="text"
-                              placeholder="Search outlets..."
+                              placeholder="Cari outlet..."
                               value={searchQuery}
                               onChange={(e) => setSearchQuery(e.target.value)}
                               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -563,8 +576,10 @@ export default function CartPage() {
                             ))
                           ) : (
                             <div className="px-4 py-6 text-gray-500 text-center">
-                              <div className="text-2xl mb-2">🔍</div>
-                              No outlets found
+                              <div className="mb-2 flex justify-center">
+                                <Search size={32} className="text-gray-400" />
+                              </div>
+                              Tidak ada outlet ditemukan
                             </div>
                           )}
                         </div>
@@ -573,14 +588,15 @@ export default function CartPage() {
                   </div>
                   {!selectedOutlet && isAttemptedCheckout && (
                     <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                      ⚠️ Please select an outlet for pickup
+                      <AlertTriangle size={16} />
+                      Pilih outlet pickup dulu ya
                     </p>
                   )}
                 </div>
 
                 {/* Pickup Time Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Pickup Time *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Waktu Pickup *</label>
                   <input
                     type="datetime-local"
                     value={pickupTime}
@@ -591,11 +607,13 @@ export default function CartPage() {
                   />
                   {!pickupTime && isAttemptedCheckout && (
                     <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                      ⚠️ Please select a pickup time
+                      <AlertTriangle size={16} />
+                      Pilih waktu pickup dulu ya
                     </p>
                   )}
                   <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
-                    ⏰ Pickup time must be at least 30 minutes from now
+                    <Clock size={14} />
+                    Waktu pickup minimal 30 menit dari sekarang
                   </p>
                 </div>
               </div>
@@ -612,11 +630,12 @@ export default function CartPage() {
                   {isCheckingOut ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Processing...
+                      Memproses...
                     </>
                   ) : (
                     <>
-                      💳 Pay Now - {formatPrice(getTotalPrice())}
+                      <CreditCard size={20} />
+                      Bayar Sekarang - {formatPrice(getTotalPrice())}
                     </>
                   )}
                 </button>
@@ -625,7 +644,8 @@ export default function CartPage() {
                   onClick={clearCart}
                   className="w-full border-2 border-red-300 text-red-600 py-3 rounded-xl font-semibold hover:bg-red-50 hover:border-red-400 transition-all duration-300 flex items-center justify-center gap-2"
                 >
-                  🗑️ Clear Cart
+                  <Trash2 size={20} />
+                  Kosongkan Keranjang
                 </button>
               </div>
             </div>
@@ -635,8 +655,11 @@ export default function CartPage() {
         {/* Additional Info Section */}
         <div className="mt-8 bg-white rounded-2xl shadow-xl p-6 border border-red-100">
           <div className="text-center">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">🔒 Secure Payment</h3>
-            <p className="text-gray-600 text-sm">Your payment information is processed securely through Midtrans. We never store your payment details.</p>
+            <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
+              <Lock size={20} className="text-red-600" />
+              Pembayaran Aman
+            </h3>
+            <p className="text-gray-600 text-sm">Informasi pembayaran kamu diproses dengan aman melalui Midtrans. Kami tidak pernah menyimpan detail pembayaran kamu.</p>
           </div>
         </div>
       </div>

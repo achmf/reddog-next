@@ -1,4 +1,5 @@
 import MenuCard from "@/components/Menu/MenuCard"
+import { Utensils } from "lucide-react"
 
 type MenuType = {
   id: string
@@ -46,7 +47,9 @@ export default function MenuSection({ title, items, icon, description, color }: 
         </div>
       ) : (
         <div className="text-center py-12">
-          <div className="text-4xl mb-3">🍽️</div>
+          <div className="text-gray-400 mb-3 flex justify-center">
+            <Utensils size={48} />
+          </div>
           <p className="text-lg text-gray-600">Menu {title.toLowerCase()} tidak tersedia.</p>
         </div>
       )}
