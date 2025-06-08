@@ -3,6 +3,7 @@
 import type React from "react"
 import { type FC, useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
+import { Sparkles, Flame, Plus, Droplets, Coffee, Snowflake, FileText, Hash } from "lucide-react"
 
 type ModalProps = {
   isOpen: boolean
@@ -143,11 +144,11 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
     selectedValues: string[] | string, 
     handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void, 
     isMultiple = true, 
-    icon?: string
+    IconComponent?: React.ComponentType<{ className?: string }>
   ) => (
     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 hover:border-primary/30 transition-colors duration-200">
       <div className="flex items-center gap-3 mb-4">
-        {icon && <span className="text-2xl">{icon}</span>}
+        {IconComponent && <IconComponent className="w-6 h-6 text-primary" />}
         <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -203,8 +204,8 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
         <div className="bg-gradient-to-r from-primary to-red-600 text-white p-6 relative">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Customize Your Order</h2>
-              <p className="text-white/90 text-sm">Add your favorite add-ons and special instructions</p>
+              <h2 className="text-2xl font-bold mb-2">Sesuaikan Pesanan Kamu</h2>
+              <p className="text-white/90 text-sm">Tambahin topping dan catatan khusus sesuai selera kamu</p>
             </div>
             <button 
               onClick={closeModal}
@@ -225,12 +226,12 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
             {category === "combo" && (
               <div className="space-y-6">
                 {renderOptionCard(
-                  "Toppings",
-                  ["Sugar", "Cheese Powder", "Chili Powder"],
+                  "Topping",
+                  ["Gula", "Bubuk Keju", "Bubuk Cabe"],
                   topping,
                   handleToppingChange,
                   true,
-                  "🧂"
+                  Sparkles
                 )}
               </div>
             )}
@@ -239,20 +240,20 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
             {category === "topokki" && (
               <div className="space-y-6">
                 {renderOptionCard(
-                  "Spicy Level",
-                  ["Normal", "Spicy", "Bomb!!!"],
+                  "Level Pedas",
+                  ["Normal", "Pedas", "Bomb!!!"],
                   spicyLevel,
                   handleSpicyLevelChange,
                   false,
-                  "🌶️"
+                  Flame
                 )}
                 {renderOptionCard(
-                  "Add-On Toppoki",
-                  ["Extra Mozarella", "Sosis/Sausage", "Odeng"],
+                  "Tambahan Toppoki",
+                  ["Extra Mozarella", "Sosis", "Odeng"],
                   addOnToppoki,
                   handleAddOnToppokiChange,
                   true,
-                  "🧀"
+                  Plus
                 )}
               </div>
             )}
@@ -261,20 +262,20 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
             {category === "korean snack" && (
               <div className="space-y-6">
                 {renderOptionCard(
-                  "Free Sauce (Max 2)",
-                  ["Honey Mustard", "Secret Sauce", "Cheddar Cheese", "Cheese Mayo", "Tomato Sauce", "Chili Sauce"],
+                  "Saus Gratis (Maks 2)",
+                  ["Honey Mustard", "Saus Rahasia", "Keju Cheddar", "Keju Mayo", "Saus Tomat", "Saus Sambal"],
                   freeSauce,
                   handleFreeSauceChange,
                   true,
-                  "🥫"
+                  Droplets
                 )}
                 {renderOptionCard(
-                  "Toppings (Max 2)",
-                  ["Sugar", "Cheese Powder", "Chile Powder"],
+                  "Topping (Maks 2)",
+                  ["Gula", "Bubuk Keju", "Bubuk Cabe"],
                   topping,
                   handleToppingChange,
                   true,
-                  "🧂"
+                  Sparkles
                 )}
               </div>
             )}
@@ -283,20 +284,20 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
             {category === "minuman" && (
               <div className="space-y-6">
                 {renderOptionCard(
-                  "Size",
+                  "Ukuran",
                   ["Medium", "Large"],
                   size,
                   handleSizeChange,
                   false,
-                  "🥤"
+                  Coffee
                 )}
                 {renderOptionCard(
-                  "Ice Level",
-                  ["Normal", "No Ice"],
+                  "Level Es",
+                  ["Normal", "Tanpa Es"],
                   iceLevel,
                   handleIceLevelChange,
                   false,
-                  "🧊"
+                  Snowflake
                 )}
               </div>
             )}
@@ -304,28 +305,28 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
             {/* Special Instructions */}
             <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-2xl">📝</span>
+                <FileText className="w-6 h-6 text-primary" />
                 <h3 className="text-lg font-semibold text-gray-800">
-                  Special Instructions <span className="text-gray-500 text-sm font-normal">(optional)</span>
+                  Catatan Khusus <span className="text-gray-500 text-sm font-normal">(opsional)</span>
                 </h3>
               </div>
               <textarea
                 value={specialInstructions}
                 onChange={(e) => setSpecialInstructions(e.target.value)}
-                placeholder="For example: 'Extra spicy', 'No onions', 'Extra cheese'..."
+                placeholder="Misalnya: 'Extra pedas', 'Tanpa bawang', 'Keju extra'..."
                 className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors duration-200 resize-none h-24"
                 maxLength={200}
               />
               <div className="text-right text-xs text-gray-400 mt-2">
-                {specialInstructions.length}/200 characters
+                {specialInstructions.length}/200 karakter
               </div>
             </div>
 
             {/* Quantity Section */}
             <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-2xl"></span>
-                <h3 className="text-lg font-semibold text-gray-800">Quantity</h3>
+                <Hash className="w-6 h-6 text-primary" />
+                <h3 className="text-lg font-semibold text-gray-800">Jumlah</h3>
               </div>
               <div className="flex items-center justify-center gap-4">
                 <button 
@@ -356,13 +357,13 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
               onClick={closeModal} 
               className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-4 px-6 rounded-xl font-semibold text-lg transition-colors duration-200"
             >
-              Cancel
+              Batal
             </button>
             <button 
               onClick={handleAddToCart} 
               className="flex-1 bg-gradient-to-r from-primary to-red-600 hover:from-red-600 hover:to-primary text-white py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              Add to Cart ({quantity} {quantity === 1 ? 'item' : 'items'})
+              Masukkan Keranjang ({quantity} {quantity === 1 ? 'item' : 'item'})
             </button>
           </div>
         </div>

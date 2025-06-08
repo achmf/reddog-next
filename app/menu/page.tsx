@@ -47,28 +47,28 @@ export default function MenuPage() {
       label: "Combo",
       icon: "🍱",
       description: "Paket hemat dengan berbagai pilihan",
-      color: "from-red-400 to-red-600",
+      color: "from-red-500 to-red-500",
     },
     {
       key: "topokki",
       label: "Topokki",
       icon: "🍲",
       description: "Rice cake Korea yang pedas dan lezat",
-      color: "from-orange-400 to-orange-600",
+      color: "from-red-500 to-red-500",
     },
     {
       key: "korean snack",
       label: "Korean Snack",
       icon: "🥟",
       description: "Camilan khas Korea yang autentik",
-      color: "from-yellow-400 to-yellow-600",
+      color: "from-red-500 to-red-500",
     },
     {
       key: "minuman",
       label: "Minuman",
       icon: "🥤",
       description: "Minuman segar untuk melengkapi makanan",
-      color: "from-blue-400 to-blue-600",
+      color: "from-red-500 to-red-500",
     },
   ];
 

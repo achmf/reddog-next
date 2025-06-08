@@ -73,43 +73,43 @@ export default function OrdersPage() {
         return {
           color: "bg-blue-100 text-blue-800",
           icon: <CheckCircle className="h-4 w-4" />,
-          text: "Payment Confirmed",
+          text: "Pembayaran Dikonfirmasi",
         }
       case "received":
         return {
           color: "bg-yellow-100 text-yellow-800",
           icon: <Clock className="h-4 w-4" />,
-          text: "Order Received",
+          text: "Pesanan Diterima",
         }
       case "cooking":
         return {
           color: "bg-orange-100 text-orange-800",
           icon: <Clock className="h-4 w-4" />,
-          text: "Preparing Order",
+          text: "Lagi Dimasakin",
         }
       case "ready":
         return {
           color: "bg-green-100 text-green-800",
           icon: <CheckCircle className="h-4 w-4" />,
-          text: "Ready to Pickup",
+          text: "Siap Diambil",
         }
       case "completed":
         return {
           color: "bg-green-100 text-green-800",
           icon: <CheckCircle className="h-4 w-4" />,
-          text: "Order Completed",
+          text: "Pesanan Selesai",
         }
       case "pending":
         return {
           color: "bg-yellow-100 text-yellow-800",
           icon: <Clock className="h-4 w-4" />,
-          text: "Pending Payment",
+          text: "Menunggu Pembayaran",
         }
       case "canceled":
         return {
           color: "bg-red-100 text-red-800",
           icon: <XCircle className="h-4 w-4" />,
-          text: "Order Canceled",
+          text: "Pesanan Dibatalkan",
         }
       default:
         return {
@@ -123,7 +123,7 @@ export default function OrdersPage() {
   // Format pickup time
   const formatPickupTime = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleString("en-US", {
+    return date.toLocaleString("id-ID", {
       weekday: "short",
       day: "numeric",
       month: "short",
@@ -148,7 +148,7 @@ export default function OrdersPage() {
         <div className="max-w-4xl mx-auto px-4 py-10">
           <div className="text-center">
             <div className="w-16 h-16 rounded-full border-4 border-red-400 border-t-transparent animate-spin mx-auto mb-4"></div>
-            <p className="text-lg font-semibold text-red-500">Loading your orders...</p>
+            <p className="text-lg font-semibold text-red-500">Memuat pesanan kamu...</p>
           </div>
         </div>
       </div>
@@ -182,11 +182,11 @@ export default function OrdersPage() {
             <div className="text-6xl mb-6">
               <Package className="h-16 w-16 mx-auto text-gray-400" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-3">No Orders Yet</h2>
-            <p className="text-gray-600 mb-8">You haven't placed any orders yet. Start exploring our delicious menu!</p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-3">Belum Ada Pesanan Nih</h2>
+            <p className="text-gray-600 mb-8">Kamu belum pesen apa-apa. Yuk, cobain menu lezat kita!</p>
             <Link href="/menu">
               <button className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-8 py-4 rounded-full hover:from-red-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 shadow-lg font-semibold">
-                Browse Menu
+                Lihat Menu
               </button>
             </Link>
           </div>
@@ -204,7 +204,7 @@ export default function OrdersPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-sm font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                          Order #{order.id.substring(0, 8)}...
+                          Pesanan #{order.id.substring(0, 8)}...
                         </span>
                         <span className={`text-sm font-semibold px-3 py-1 rounded-full flex items-center gap-2 ${statusInfo.color}`}>
                           {statusInfo.icon}
@@ -212,7 +212,7 @@ export default function OrdersPage() {
                         </span>
                       </div>
                       <h3 className="text-2xl font-bold text-gray-800">{formatPrice(order.total_amount)}</h3>
-                      <p className="text-gray-600 mt-1">Order by: {order.buyer_name}</p>
+                      <p className="text-gray-600 mt-1">Atas nama: {order.buyer_name}</p>
                     </div>
                     <div className="text-red-500 p-2 hover:bg-red-50 rounded-full transition-colors">
                       <ChevronRight className="h-6 w-6" />
@@ -223,14 +223,14 @@ export default function OrdersPage() {
                     <div className="flex items-center gap-2 text-gray-700">
                       <MapPin className="h-5 w-5 text-red-500" />
                       <div>
-                        <div className="font-medium">Pickup Location</div>
+                        <div className="font-medium">Lokasi Pickup</div>
                         <div className="text-sm text-gray-600">{order.outlet_name}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-gray-700">
                       <Clock className="h-5 w-5 text-red-500" />
                       <div>
-                        <div className="font-medium">Pickup Time</div>
+                        <div className="font-medium">Waktu Pickup</div>
                         <div className="text-sm text-gray-600">{formatPickupTime(order.pickup_time)}</div>
                       </div>
                     </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { ShoppingCart } from "lucide-react";
 
 export default function CartBar() {
   const { getTotalItems, getTotalPrice, cart } = useCart();
@@ -33,7 +34,7 @@ export default function CartBar() {
           {/* Cart Icon with Badge */}
           <div className="relative">
             <div className="w-12 h-12 bg-gradient-to-r from-primary to-red-600 rounded-full flex items-center justify-center text-white text-xl shadow-lg">
-              🛒
+              <ShoppingCart size={20} />
             </div>
             <div className="absolute -top-2 -right-2 bg-accent text-primary text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-md">
               {totalItems}
