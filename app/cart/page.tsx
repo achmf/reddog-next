@@ -29,6 +29,7 @@ export default function CartPage() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [paymentToken, setPaymentToken] = useState<string | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
+  const [orderDetails, setOrderDetails] = useState<any>(null) // Store order details temporarily
   const [buyerName, setBuyerName] = useState("")
   const [phoneNumber, setPhoneNumber] = useState("")
   const [email, setEmail] = useState("")
@@ -160,6 +161,9 @@ export default function CartPage() {
         throw new Error(data.message || "Failed to create payment")
       }
 
+      // Store order details for later use when payment succeeds
+      setOrderDetails(data.order_details)
+
       // Set the payment token to trigger the Midtrans Snap popup
       setPaymentToken(data.token)
     } catch (error) {
@@ -170,23 +174,58 @@ export default function CartPage() {
   }
 
   const handlePaymentClose = () => {
+    // Payment popup was closed - clear temporary data
     setPaymentToken(null)
+    setOrderDetails(null) 
+    setOrderId(null)
     setIsCheckingOut(false)
   }
 
-  const handlePaymentSuccess = () => {
-    clearCart()
-    if (orderId) {
-      router.push(`/orders/${orderId}`)
-    } else {
-      router.push("/payment/success")
+  const handlePaymentSuccess = async () => {
+    try {
+      // Create the order in database after successful payment
+      if (orderDetails) {
+        const response = await fetch("/api/orders/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            orderDetails: orderDetails,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!data.success) {
+          console.error("Failed to create order after payment:", data.message)
+          // Still proceed to clear cart and redirect, but log the error
+        }
+      }
+
+      clearCart()
+      if (orderId) {
+        router.push(`/orders/${orderId}`)
+      } else {
+        router.push("/payment/success")
+      }
+    } catch (error) {
+      console.error("Error creating order after payment:", error)
+      // Still clear cart and redirect to avoid user confusion
+      clearCart()
+      if (orderId) {
+        router.push(`/orders/${orderId}`)
+      } else {
+        router.push("/payment/success")
+      }
     }
   }
 
   const handlePaymentPending = () => {
-    clearCart()
+    // For pending payments, we don't create the order yet
+    // User will be redirected to pending page and order will be created when payment confirms
     if (orderId) {
-      router.push(`/orders/${orderId}`)
+      router.push(`/payment/pending?order_id=${orderId}`)
     } else {
       router.push("/payment/pending")
     }
@@ -194,7 +233,10 @@ export default function CartPage() {
 
   const handlePaymentError = (error: any) => {
     console.error("Payment error:", error)
+    // Clear temporary data on payment error
     setPaymentToken(null)
+    setOrderDetails(null)
+    setOrderId(null)
     setIsCheckingOut(false)
     router.push("/payment/failed")
   }

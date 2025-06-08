@@ -9,6 +9,13 @@ export async function POST(request: Request) {
     // Create a new Supabase client - properly awaited
     const supabase = await createClient()
 
+    // Check if order exists
+    const { data: existingOrder } = await supabase
+      .from("orders")
+      .select("id, status")
+      .eq("id", order_id)
+      .single()
+
     // Determine the order status based on Midtrans transaction status
     let orderStatus = "pending"
 
@@ -22,11 +29,20 @@ export async function POST(request: Request) {
       orderStatus = "pending"
     }
 
-    // Update the order status in Supabase
-    const { error } = await supabase.from("orders").update({ status: orderStatus }).eq("id", order_id)
+    if (existingOrder) {
+      // Order exists, just update the status
+      const { error } = await supabase.from("orders").update({ status: orderStatus }).eq("id", order_id)
 
-    if (error) {
-      throw new Error(`Error updating order status: ${error.message}`)
+      if (error) {
+        throw new Error(`Error updating order status: ${error.message}`)
+      }
+    } else {
+      // Order doesn't exist yet (webhook came before client-side creation)
+      // This could happen in rare cases where webhook is faster than client
+      console.log(`Order ${order_id} not found in database. This is expected for the new secure payment flow.`)
+      
+      // We'll not create the order here since we don't have the full order details
+      // The order should be created by the client after successful payment
     }
 
     return NextResponse.json({

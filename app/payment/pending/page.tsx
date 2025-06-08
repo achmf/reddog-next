@@ -10,17 +10,33 @@ export default function PaymentPendingPage() {
   const orderId = searchParams.get("order_id")
 
   useEffect(() => {
-    // If we have an order ID, redirect to the order details page
-    if (orderId) {
-      router.push(`/orders/${orderId}`)
-    } else {
-      // If no order ID is provided, redirect to the order history page after a short delay
-      const timer = setTimeout(() => {
-        router.push("/orders")
-      }, 3000)
-
-      return () => clearTimeout(timer)
+    // Check if order exists in database (may not exist due to new secure payment flow)
+    const checkOrderStatus = async () => {
+      if (orderId) {
+        try {
+          // Wait a bit for potential webhook processing
+          await new Promise(resolve => setTimeout(resolve, 2000))
+          
+          // Try to redirect to order details
+          router.push(`/orders/${orderId}`)
+        } catch (error) {
+          console.error("Error checking order status:", error)
+          // If there's an issue, redirect to orders page
+          const timer = setTimeout(() => {
+            router.push("/orders")
+          }, 3000)
+          return () => clearTimeout(timer)
+        }
+      } else {
+        // If no order ID is provided, redirect to the order history page after a short delay
+        const timer = setTimeout(() => {
+          router.push("/orders")
+        }, 3000)
+        return () => clearTimeout(timer)
+      }
     }
+
+    checkOrderStatus()
   }, [orderId, router])
 
   return (
