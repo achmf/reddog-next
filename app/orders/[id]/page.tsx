@@ -49,29 +49,85 @@ export default function OrderDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fetchAttempts, setFetchAttempts] = useState(0);
+  const [userSessionId, setUserSessionId] = useState<string>(""); // User session untuk privacy
   const router = useRouter();
   const params = useParams();
   const orderId = params.id as string;
   const supabase = createClient();
+  const maxRetries = 3;
 
+  // Generate atau ambil session ID dari localStorage untuk privacy
+  useEffect(() => {
+    let sessionId = localStorage.getItem("user_session_id")
+    if (!sessionId) {
+      sessionId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      localStorage.setItem("user_session_id", sessionId)
+    }
+    setUserSessionId(sessionId)
+  }, [])
   useEffect(() => {
     async function fetchOrderDetails() {
-      try {        if (!orderId) {
+      try {
+        if (!orderId) {
           setError("ID pesanan tidak ada");
           setLoading(false);
           return;
         }
 
-        // Fetch order details
+        if (!userSessionId) {
+          return; // Wait for user session ID to be loaded
+        }
+
+        // Fetch order details dengan filter user_session_id untuk privacy
         const { data: orderData, error: orderError } = await supabase
           .from("orders")
           .select("*, validation_code")
           .eq("id", orderId)
-          .single();
-
-        if (orderError) {
-          throw orderError;
-        }        if (!orderData) {
+          .eq("user_session_id", userSessionId) // Privacy filter
+          .single();if (orderError || !orderData) {
+          // If order not found, try to ensure it exists (for recently paid orders)
+          if (!orderData && fetchAttempts < maxRetries) {
+            console.log(`Order not found, trying to ensure order exists... (attempt ${fetchAttempts + 1}/${maxRetries})`);
+            
+            try {
+              // Try to ensure the order exists
+              const ensureResponse = await fetch("/api/orders/ensure", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  orderId: orderId
+                }),
+              });
+              
+              const ensureData = await ensureResponse.json();
+              
+              if (ensureData.success && ensureData.exists) {
+                console.log("Order found via ensure endpoint, retrying fetch...");
+                setFetchAttempts(prev => prev + 1);
+                setTimeout(() => {
+                  fetchOrderDetails();
+                }, 1000);
+                return;
+              }
+            } catch (ensureError) {
+              console.error("Error ensuring order:", ensureError);
+            }
+            
+            // If ensure didn't work, retry with delay
+            setFetchAttempts(prev => prev + 1);
+            setTimeout(() => {
+              fetchOrderDetails();
+            }, 2000);
+            return;
+          }
+          
+          if (orderError) {
+            throw orderError;
+          }
+          
           setError("Pesanan tidak ditemukan");
           setLoading(false);
           return;
@@ -89,16 +145,15 @@ export default function OrderDetailsPage() {
           throw itemsError;
         }
 
-        setOrderItems(itemsData || []);      } catch (error) {
+        setOrderItems(itemsData || []);
+      } catch (error) {
         console.error("Error fetching order details:", error);
         setError("Gagal memuat detail pesanan");
       } finally {
         setLoading(false);
       }
-    }
-
-    fetchOrderDetails();
-  }, [orderId, supabase]);
+    }    fetchOrderDetails();
+  }, [orderId, supabase, fetchAttempts, userSessionId]);
   const handleCancelOrder = async () => {
     if (!order) return;
 

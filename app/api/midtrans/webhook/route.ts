@@ -1,70 +1,92 @@
 import { createClient } from "@/utils/supabase/server"
 import { NextResponse } from "next/server"
-import midtransClient from "midtrans-client"
+import crypto from "crypto"
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    console.log("Webhook received:", body)    // Extract notification data directly from body
-    const orderId = body.order_id
-    const transactionStatus = body.transaction_status
-    const fraudStatus = body.fraud_status
-
-    console.log(`Transaction notification received. Order ID: ${orderId}. Transaction status: ${transactionStatus}. Fraud status: ${fraudStatus}`)
-
-    // Create a new Supabase client
-    const supabase = await createClient()
-
-    // Check if order exists
-    const { data: existingOrder } = await supabase
-      .from("orders")
-      .select("id, status")
-      .eq("id", orderId)
-      .single()
-
-    // Determine the order status based on Midtrans transaction status
-    let orderStatus = "pending"
-
-    if (transactionStatus === "capture" || transactionStatus === "settlement") {
-      if (fraudStatus === "accept") {
-        orderStatus = "paid"
+    
+    // Verify signature (important for security)
+    const signature = request.headers.get("x-signature")
+    if (signature) {
+      const serverKey = process.env.MIDTRANS_SERVER_KEY || "SB-Mid-server-TvttKE1eMdnC4ZWlEVclI8V-"
+      const hash = crypto
+        .createHash("sha512")
+        .update(`${body.order_id}${body.status_code}${body.gross_amount}${serverKey}`)
+        .digest("hex")
+      
+      if (hash !== signature) {
+        console.log("Invalid signature")
+        return NextResponse.json({ message: "Invalid signature" }, { status: 401 })
       }
-    } else if (transactionStatus === "cancel" || transactionStatus === "deny" || transactionStatus === "expire") {
-      orderStatus = "failed"
-    } else if (transactionStatus === "pending") {
-      orderStatus = "pending"
     }
 
+    const { order_id, transaction_status, payment_type, fraud_status } = body
+    console.log(`Webhook received for order ${order_id}: ${transaction_status}`)
+
+    const supabase = await createClient()
+
+    // Map Midtrans status to our order status
+    let orderStatus = "pending"
+    if (transaction_status === "settlement" || transaction_status === "capture") {
+      orderStatus = fraud_status === "accept" ? "paid" : "pending"
+    } else if (transaction_status === "pending") {
+      orderStatus = "pending"
+    } else if (transaction_status === "deny" || transaction_status === "cancel" || transaction_status === "expire") {
+      orderStatus = "canceled"
+    }
+
+    // Try to update existing order
+    const { data: existingOrder, error: fetchError } = await supabase
+      .from("orders")
+      .select("id, status")
+      .eq("id", order_id)
+      .single()
+
     if (existingOrder) {
-      // Order exists, update the status
-      const { error } = await supabase
+      // Update existing order
+      const { error: updateError } = await supabase
         .from("orders")
         .update({ 
           status: orderStatus,
+          payment_status: transaction_status,
           updated_at: new Date().toISOString()
         })
-        .eq("id", orderId)
+        .eq("id", order_id)
 
-      if (error) {
-        throw new Error(`Error updating order status: ${error.message}`)
+      if (updateError) {
+        console.error("Error updating order:", updateError)
+        return NextResponse.json({ message: "Error updating order" }, { status: 500 })
       }
 
-      console.log(`Order ${orderId} status updated to ${orderStatus}`)
-    } else {
-      // Order doesn't exist yet - this is expected in the new secure flow
-      // We'll just log this and return success, as the order will be created by the client
-      console.log(`Order ${orderId} not found in database. This is expected for the new secure payment flow.`)
+      console.log(`Order ${order_id} updated to status: ${orderStatus}`)    } else {
+      // Order doesn't exist yet - store webhook data temporarily for later processing
+      console.log(`Order ${order_id} not found in database, storing webhook data for later processing`)
+      
+      // Store webhook data in payment_webhooks table
+      const { error: webhookError } = await supabase
+        .from("payment_webhooks")
+        .insert({
+          order_id: order_id,
+          transaction_status: transaction_status,
+          payment_type: payment_type || null,
+          fraud_status: fraud_status || null,
+          gross_amount: body.gross_amount || 0,
+          webhook_data: body,
+          processed: false
+        })
+
+      if (webhookError) {
+        console.error("Error storing webhook data:", webhookError)
+        // Don't fail the webhook response, just log the error
+      } else {
+        console.log(`Webhook data stored for order ${order_id}, will be processed when order is created`)
+      }
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Webhook processed successfully",
-    })
+    return NextResponse.json({ message: "OK" })
   } catch (error) {
     console.error("Webhook processing error:", error)
-    return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 },
-    )
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
   }
 }

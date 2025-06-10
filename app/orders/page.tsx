@@ -20,8 +20,19 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [showBackToTop, setShowBackToTop] = useState(false)
+  const [userSessionId, setUserSessionId] = useState<string>("")
   const router = useRouter()
   const supabase = createClient()
+
+  // Generate atau ambil session ID dari localStorage
+  useEffect(() => {
+    let sessionId = localStorage.getItem("user_session_id")
+    if (!sessionId) {
+      sessionId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      localStorage.setItem("user_session_id", sessionId)
+    }
+    setUserSessionId(sessionId)
+  }, [])
 
   // Handle scroll for back to top button
   useEffect(() => {
@@ -36,16 +47,26 @@ export default function OrdersPage() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
-
   useEffect(() => {
     async function fetchOrders() {
+      if (!userSessionId) return
+
+      setLoading(true)
       try {
-        const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false })
+        console.log("Fetching orders for user session:", userSessionId)
+        
+        // Filter orders berdasarkan user_session_id untuk privacy
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("user_session_id", userSessionId)
+          .order("created_at", { ascending: false })
 
         if (error) {
           throw error
         }
 
+        console.log(`Found ${data?.length || 0} orders for this user`)
         setOrders(data || [])
       } catch (error) {
         console.error("Error fetching orders:", error)
@@ -55,7 +76,7 @@ export default function OrdersPage() {
     }
 
     fetchOrders()
-  }, [supabase])
+  }, [supabase, userSessionId])
 
   // Format price to Indonesian Rupiah
   const formatPrice = (price: number) => {

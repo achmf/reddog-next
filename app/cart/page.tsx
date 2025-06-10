@@ -30,6 +30,7 @@ export default function CartPage() {
   const [paymentToken, setPaymentToken] = useState<string | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
   const [orderDetails, setOrderDetails] = useState<any>(null) // Simpan detail order sementara
+  const [userSessionId, setUserSessionId] = useState<string>("") // User session untuk privacy
   const [buyerName, setBuyerName] = useState("")
   const [phoneNumber, setPhoneNumber] = useState("")
   const [email, setEmail] = useState("")
@@ -38,6 +39,17 @@ export default function CartPage() {
   const [outlets, setOutlets] = useState<Outlet[]>([])  // State untuk menyimpan outlet yang diambil
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Generate atau ambil session ID dari localStorage untuk privacy
+  useEffect(() => {
+    let sessionId = localStorage.getItem("user_session_id")
+    if (!sessionId) {
+      sessionId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      localStorage.setItem("user_session_id", sessionId)
+      console.log("Generated new user session ID:", sessionId)
+    }
+    setUserSessionId(sessionId)
+  }, [])
 
   // Ambil data outlet dari Supabase
   useEffect(() => {
@@ -148,10 +160,10 @@ export default function CartPage() {
           items,
           outletId: selectedOutlet.id,
           outletName: selectedOutlet.name,
-          buyerName: buyerName,
-          phoneNumber: phoneNumber,
+          buyerName: buyerName,          phoneNumber: phoneNumber,
           email: email,
           pickupTime: new Date(pickupTime).toISOString(),
+          userSessionId: userSessionId, // Include user session for privacy
         }),
       })
 
@@ -159,10 +171,11 @@ export default function CartPage() {
 
       if (!data.success) {
         throw new Error(data.message || "Gagal memproses pembayaran")
-      }
-
-      // Store order details for later use when payment succeeds
+      }      // Store order details for later use when payment succeeds
       setOrderDetails(data.order_details)
+      setOrderId(data.order_details.id) // Set orderId immediately from order details
+
+      console.log("Payment token created, order details stored:", data.order_details)
 
       // Set the payment token to trigger the Midtrans Snap popup
       setPaymentToken(data.token)
@@ -172,7 +185,6 @@ export default function CartPage() {
       alert(`Oops! Ada kesalahan: ${error instanceof Error ? error.message : "Terjadi kesalahan"}`)
     }
   }
-
   const handlePaymentClose = () => {
     // Popup pembayaran ditutup - clear data sementara
     setPaymentToken(null)
@@ -183,49 +195,70 @@ export default function CartPage() {
 
   const handlePaymentSuccess = async () => {
     try {
-      // Buat order di database setelah pembayaran berhasil
+      console.log("Payment success callback triggered")
+      
+      // Ensure order exists in database (either from webhook or create it now)
       if (orderDetails) {
-        const response = await fetch("/api/orders/create", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            orderDetails: orderDetails,
-          }),
-        })
+        console.log("Ensuring order exists in database:", orderDetails.id)
+        
+        try {
+          const response = await fetch("/api/orders/ensure", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },            body: JSON.stringify({
+              orderId: orderDetails.id,
+              orderDetails: {
+                ...orderDetails,
+                user_session_id: userSessionId // Include user session for privacy
+              },
+            }),
+          })
 
-        const data = await response.json()
+          const data = await response.json()
+          console.log("Order ensure response:", data)
 
-        if (!data.success) {
-          console.error("Failed to create order after payment:", data.message)
-          // Tetap lanjutkan untuk clear cart dan redirect, tapi log error
+          if (data.success) {
+            console.log("Order successfully ensured in database")
+          } else {
+            console.error("Failed to ensure order:", data.message)
+          }
+        } catch (error) {
+          console.error("Error ensuring order:", error)
         }
       }
-
+      
+      // Clear cart and redirect
       clearCart()
-      if (orderId) {
-        router.push(`/orders/${orderId}`)
+      const targetOrderId = orderDetails?.id || orderId
+      console.log("Payment successful, redirecting to order:", targetOrderId)
+      
+      if (targetOrderId) {
+        router.push(`/orders/${targetOrderId}`)
       } else {
         router.push("/payment/success")
       }
     } catch (error) {
-      console.error("Error creating order after payment:", error)
-      // Tetap clear cart dan redirect untuk menghindari kebingungan user
+      console.error("Error in payment success handler:", error)
+      
+      // Still clear cart and redirect
       clearCart()
-      if (orderId) {
-        router.push(`/orders/${orderId}`)
+      const targetOrderId = orderDetails?.id || orderId
+      if (targetOrderId) {
+        router.push(`/orders/${targetOrderId}`)
       } else {
         router.push("/payment/success")
       }
     }
   }
-
   const handlePaymentPending = () => {
-    // Untuk pembayaran pending, kita belum buat order dulu
-    // User akan diarahkan ke halaman pending dan order akan dibuat saat pembayaran konfirmasi
-    if (orderId) {
-      router.push(`/payment/pending?order_id=${orderId}`)
+    console.log("Payment pending callback triggered")
+    
+    const targetOrderId = orderDetails?.id || orderId
+    console.log("Redirecting to pending page with order ID:", targetOrderId)
+    
+    if (targetOrderId) {
+      router.push(`/payment/pending?order_id=${targetOrderId}`)
     } else {
       router.push("/payment/pending")
     }
