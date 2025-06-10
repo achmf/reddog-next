@@ -15,7 +15,8 @@ import {
   OrderLoadingState,
   OrderErrorState,
   BackToTopButton,
-  OrderValidationDisplay
+  OrderValidationDisplay,
+  InvoiceDownload
 } from "@/components/Orders";
 import { ArrowLeft } from "lucide-react";
 
@@ -254,12 +255,16 @@ export default function OrderDetailsPage() {
             outletName={order.outlet_name}
             pickupTime={order.pickup_time}
           />
-        </div>
-
-        {/* Order Items */}
+        </div>        {/* Order Items */}
         <OrderItems 
           items={orderItems}
           totalAmount={order.total_amount}
+        />
+
+        {/* Invoice Download Section */}
+        <InvoiceDownload 
+          order={order}
+          orderItems={orderItems}
         />
 
         {/* Cancel Order Section */}
