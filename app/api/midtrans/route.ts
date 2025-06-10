@@ -7,11 +7,11 @@ import midtransClient from "midtrans-client"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { orderId, amount, customerDetails, items, outletId, outletName, buyerName, phoneNumber, email, pickupTime } = body
+    const { orderId, amount, customerDetails, items, outletId, outletName, buyerName, phoneNumber, email, pickupTime, userSessionId } = body
 
-    // Validate required fields
-    if (!orderId || !amount || !outletId || !outletName || !buyerName || !phoneNumber || !email || !pickupTime) {
-      return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
+    // Validate required fields including userSessionId for privacy
+    if (!orderId || !amount || !outletId || !outletName || !buyerName || !phoneNumber || !email || !pickupTime || !userSessionId) {
+      return NextResponse.json({ success: false, message: "Missing required fields including user session" }, { status: 400 })
     }
 
     // Get the origin for redirect URLs
@@ -62,6 +62,8 @@ export async function POST(request: Request) {
       phone_number: phoneNumber,
       email: email,
       pickup_time: pickupTime,
+      user_session_id: userSessionId, // Include user session for privacy
+
       items: items.map((item: any) => ({
         menu_id: item.id,
         name: item.name,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
@@ -8,36 +8,75 @@ export default function PaymentPendingPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const orderId = searchParams.get("order_id")
+  const [isChecking, setIsChecking] = useState(true)
+  const [checkAttempts, setCheckAttempts] = useState(0)
 
   useEffect(() => {
-    // Check if order exists in database (may not exist due to new secure payment flow)
-    const checkOrderStatus = async () => {
-      if (orderId) {
-        try {
-          // Wait a bit for potential webhook processing
-          await new Promise(resolve => setTimeout(resolve, 2000))
+    const checkPaymentStatus = async () => {
+      if (!orderId) {
+        setTimeout(() => router.push("/orders"), 3000)
+        return
+      }
+
+      try {
+        setIsChecking(true)
+        
+        // Check payment status from Midtrans
+        const response = await fetch(`/api/payment/status?order_id=${orderId}`)
+        const data = await response.json()
+        
+        console.log("Payment status check:", data)
+        
+        if (data.success && data.midtrans_status) {
+          const { transaction_status, fraud_status } = data.midtrans_status
           
-          // Try to redirect to order details
-          router.push(`/orders/${orderId}`)
-        } catch (error) {
-          console.error("Error checking order status:", error)
-          // If there's an issue, redirect to orders page
-          const timer = setTimeout(() => {
-            router.push("/orders")
-          }, 3000)
-          return () => clearTimeout(timer)
+          // Check if payment is successful
+          if (transaction_status === "settlement" || 
+              (transaction_status === "capture" && fraud_status === "accept")) {
+            
+            console.log("Payment successful, checking if order exists in database")
+            
+            // Check if order exists in our database
+            if (!data.order_exists) {
+              console.log("Payment successful but order not found in database - will be handled by success page")
+            }
+            
+            // Payment successful - redirect to success page
+            router.push(`/payment/success?order_id=${orderId}`)
+            return
+          } else if (transaction_status === "deny" || 
+                     transaction_status === "cancel" || 
+                     transaction_status === "expire") {
+            // Payment failed - redirect to failed page
+            router.push("/payment/failed")
+            return
+          }
         }
-      } else {
-        // If no order ID is provided, redirect to the order history page after a short delay
-        const timer = setTimeout(() => {
+        
+        // If still pending and we haven't tried too many times, try again
+        if (checkAttempts < 10) {
+          setCheckAttempts(prev => prev + 1)
+          setTimeout(() => checkPaymentStatus(), 3000) // Check again in 3 seconds
+        } else {
+          // Too many attempts, redirect to orders page
           router.push("/orders")
-        }, 3000)
-        return () => clearTimeout(timer)
+        }
+        
+      } catch (error) {
+        console.error("Error checking payment status:", error)
+        if (checkAttempts < 5) {
+          setCheckAttempts(prev => prev + 1)
+          setTimeout(() => checkPaymentStatus(), 3000)
+        } else {
+          router.push("/orders")
+        }
+      } finally {
+        setIsChecking(false)
       }
     }
 
-    checkOrderStatus()
-  }, [orderId, router])
+    checkPaymentStatus()
+  }, [orderId, router, checkAttempts])
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
@@ -59,12 +98,22 @@ export default function PaymentPendingPage() {
           </svg>
         </div>
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Payment Pending</h1>
-        <p className="text-gray-600 mb-6">Your payment is being processed. We'll update you once it's confirmed.</p>
+        <p className="text-gray-600 mb-6">
+          Your payment is being processed. We're checking the status...
+        </p>
 
         <div className="flex items-center justify-center gap-2 text-gray-500">
           <Loader2 className="animate-spin h-5 w-5" />
-          <span>Redirecting to order details...</span>
+          <span>
+            {isChecking ? "Checking payment status..." : "Redirecting..."}
+          </span>
         </div>
+        
+        {checkAttempts > 3 && (
+          <p className="text-sm text-gray-500 mt-4">
+            This is taking longer than usual. Please wait...
+          </p>
+        )}
       </div>
     </div>
   )

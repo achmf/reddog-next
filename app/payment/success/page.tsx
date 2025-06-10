@@ -9,19 +9,46 @@ export default function PaymentSuccessPage() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get("order_id")
   const [isRedirecting, setIsRedirecting] = useState(true)
+  const [isCheckingOrder, setIsCheckingOrder] = useState(false)
 
   useEffect(() => {
-    // If we have an order ID, redirect to the order details page
-    if (orderId) {
-      router.push(`/orders/${orderId}`)
-    } else {
-      // If no order ID is provided, redirect to the order history page after a short delay
-      const timer = setTimeout(() => {
-        router.push("/orders")
-      }, 3000)
+    const handleRedirect = async () => {
+      if (orderId) {
+        console.log("Payment success - checking order:", orderId)
+        setIsCheckingOrder(true)
+        
+        // Wait a moment for the order to be created
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        // Check if order exists in database
+        try {
+          const response = await fetch(`/api/payment/status?order_id=${orderId}`)
+          const data = await response.json()
+          
+          if (data.success && data.order_exists) {
+            console.log("Order found in database, redirecting to order details")
+            router.push(`/orders/${orderId}`)
+          } else {
+            console.log("Order not found in database, redirecting to orders list")
+            router.push("/orders")
+          }
+        } catch (error) {
+          console.error("Error checking order status:", error)
+          router.push(`/orders/${orderId}`) // Try anyway
+        }
+        
+        setIsCheckingOrder(false)
+      } else {
+        // If no order ID is provided, redirect to the order history page after a short delay
+        const timer = setTimeout(() => {
+          router.push("/orders")
+        }, 3000)
 
-      return () => clearTimeout(timer)
+        return () => clearTimeout(timer)
+      }
     }
+
+    handleRedirect()
   }, [orderId, router])
 
   return (
@@ -41,10 +68,12 @@ export default function PaymentSuccessPage() {
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h1>
         <p className="text-gray-600 mb-6">Your order has been placed successfully.</p>
 
-        {isRedirecting && (
+        {(isRedirecting || isCheckingOrder) && (
           <div className="flex items-center justify-center gap-2 text-gray-500">
             <Loader2 className="animate-spin h-5 w-5" />
-            <span>Redirecting to order details...</span>
+            <span>
+              {isCheckingOrder ? "Checking order status..." : "Redirecting to order details..."}
+            </span>
           </div>
         )}
       </div>
