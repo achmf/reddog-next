@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { useAlert } from "@/context/AlertContext";
 import {
   OrderHeader,
   OrderTracking,
@@ -19,6 +20,7 @@ import {
   InvoiceDownload
 } from "@/components/Orders";
 import { ArrowLeft } from "lucide-react";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type OrderItem = {
   id: string;
@@ -44,11 +46,12 @@ type Order = {
   items?: OrderItem[];
 };
 
-export default function OrderDetailsPage() {
-  const [order, setOrder] = useState<Order | null>(null);
+export default function OrderDetailsPage() {  const [order, setOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const { showError, showSuccess, showWarning, showInfo } = useAlert();
   const [error, setError] = useState<string | null>(null);
   const [fetchAttempts, setFetchAttempts] = useState(0);
   const [userSessionId, setUserSessionId] = useState<string>(""); // User session untuk privacy
@@ -128,13 +131,14 @@ export default function OrderDetailsPage() {
           if (orderError) {
             throw orderError;
           }
-          
-          setError("Pesanan tidak ditemukan");
+            setError("Pesanan tidak ditemukan");
+          showError("Pesanan tidak ditemukan atau sudah tidak valid", "Pesanan Tidak Ditemukan");
           setLoading(false);
           return;
         }
 
         setOrder(orderData);
+        showInfo("Detail pesanan berhasil dimuat", "Berhasil");
 
         // Fetch order items
         const { data: itemsData, error: itemsError } = await supabase
@@ -150,15 +154,22 @@ export default function OrderDetailsPage() {
       } catch (error) {
         console.error("Error fetching order details:", error);
         setError("Gagal memuat detail pesanan");
+        showError("Gagal memuat detail pesanan. Silakan coba lagi nanti.", "Error");
       } finally {
         setLoading(false);
       }
     }    fetchOrderDetails();
-  }, [orderId, supabase, fetchAttempts, userSessionId]);
-  const handleCancelOrder = async () => {
+  }, [orderId, supabase, fetchAttempts, userSessionId]);  const handleCancelOrder = async () => {
+    if (!order) return;
+    setShowCancelDialog(true);
+  };
+
+  const confirmCancelOrder = async () => {
     if (!order) return;
 
     setCancelLoading(true);
+    setShowCancelDialog(false);
+    
     try {
       const { error } = await supabase
         .from("orders")
@@ -170,9 +181,11 @@ export default function OrderDetailsPage() {
       }
 
       // Update local state
-      setOrder({ ...order, status: "canceled" });    } catch (error) {
+      setOrder({ ...order, status: "canceled" });
+      showSuccess("Pesanan berhasil dibatalkan", "Pembatalan Berhasil");
+    } catch (error) {
       console.error("Error canceling order:", error);
-      alert("Gagal membatalkan pesanan. Silakan coba lagi.");
+      showError("Gagal membatalkan pesanan. Silakan coba lagi.", "Gagal Membatalkan");
     } finally {
       setCancelLoading(false);
     }
@@ -273,14 +286,25 @@ export default function OrderDetailsPage() {
           isPastPickupTime={isPastPickupTime}
           cancelLoading={cancelLoading}
           onCancelOrder={handleCancelOrder}
-        />
-
-        {/* Order Status Notice */}
+        />        {/* Order Status Notice */}
         <OrderStatusNotice status={order.status} />
       </div>
       
       {/* Back to Top Button */}
       <BackToTopButton />
+
+      {/* Cancel Order Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showCancelDialog}
+        onClose={() => setShowCancelDialog(false)}
+        onConfirm={confirmCancelOrder}
+        title="Batalkan Pesanan"
+        message={`Apakah Anda yakin ingin membatalkan pesanan #${order?.id?.slice(0, 8)}? Tindakan ini tidak dapat dibatalkan dan uang akan dikembalikan sesuai kebijakan refund.`}
+        confirmText="Ya, Batalkan Pesanan"
+        cancelText="Tidak, Tetap Pertahankan"
+        type="danger"
+        isLoading={cancelLoading}
+      />
     </div>
   );
 }

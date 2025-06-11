@@ -4,6 +4,7 @@ import { useState } from "react"
 import Modal from "@/components/Menu/Modal"
 import Image from "next/image"
 import { useCart } from "@/context/CartContext"
+import { useAlert } from "@/context/AlertContext"
 
 type MenuCardProps = {
   id: string
@@ -16,6 +17,7 @@ type MenuCardProps = {
 
 export default function MenuCard({ id, name, price, image, category, description }: MenuCardProps) {
   const { addToCart, updateQuantity, cart } = useCart()
+  const { showSuccess, showInfo } = useAlert()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [addOns, setAddOns] = useState<{
     freeSauce: string[]
@@ -46,6 +48,7 @@ export default function MenuCard({ id, name, price, image, category, description
         quantity: addOns.quantity,
       },
     })
+    showSuccess(`${name} berhasil ditambahkan ke keranjang!`, "Ditambahkan ke Keranjang")
   }
 
   const handleOpenModal = () => {
@@ -80,17 +83,30 @@ export default function MenuCard({ id, name, price, image, category, description
         quantity: addon.quantity,
       },
     })
+    
+    const addOnsText = []
+    if (addon.freeSauce.length > 0) addOnsText.push(`Saus: ${addon.freeSauce.join(', ')}`)
+    if (addon.topping.length > 0) addOnsText.push(`Topping: ${addon.topping.join(', ')}`)
+    
+    const message = `${name} (${addon.quantity}x) ditambahkan ke keranjang${addOnsText.length > 0 ? ` dengan ${addOnsText.join(' & ')}` : ''}!`
+    showSuccess(message, "Ditambahkan ke Keranjang")
   }
 
   const handleIncreaseQuantity = () => {
     if (cartItem) {
       updateQuantity(id, cartItem.quantity + 1)
+      showInfo(`Jumlah ${name} ditambah menjadi ${cartItem.quantity + 1}`, "Jumlah Diperbarui")
     }
   }
 
   const handleDecreaseQuantity = () => {
     if (cartItem) {
-      updateQuantity(id, cartItem.quantity - 1)
+      if (cartItem.quantity > 1) {
+        updateQuantity(id, cartItem.quantity - 1)
+        showInfo(`Jumlah ${name} dikurangi menjadi ${cartItem.quantity - 1}`, "Jumlah Diperbarui")
+      } else {
+        showInfo(`${name} akan dihapus dari keranjang jika dikurangi lagi`, "Peringatan")
+      }
     }
   }
   return (
@@ -135,21 +151,21 @@ export default function MenuCard({ id, name, price, image, category, description
             <div className="space-y-3">
               {/* Quantity Controls */}
               <div className="flex justify-center items-center bg-gray-50 rounded-xl p-2">
-                <button
-                  onClick={handleDecreaseQuantity}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-lg font-bold w-12 h-12 flex items-center justify-center transition-colors duration-200 shadow-md hover:shadow-lg"
-                >
-                  −
-                </button>
-                <div className="text-gray-800 w-16 text-center text-xl font-bold">
-                  {cartItem.quantity}
+                <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1 border border-red-200">
+                  <button
+                    onClick={handleDecreaseQuantity}
+                    className="text-red-500 hover:text-red-700 font-bold text-lg"
+                  >
+                    -
+                  </button>
+                  <span className="font-semibold text-gray-800 min-w-[24px] text-center text-xl">{cartItem.quantity}</span>
+                  <button
+                    onClick={handleIncreaseQuantity}
+                    className="text-red-500 hover:text-red-700 font-bold text-lg"
+                  >
+                    +
+                  </button>
                 </div>
-                <button
-                  onClick={handleIncreaseQuantity}
-                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-lg font-bold w-12 h-12 flex items-center justify-center transition-colors duration-200 shadow-md hover:shadow-lg"
-                >
-                  +
-                </button>
               </div>
               
               {/* In Cart Indicator */}

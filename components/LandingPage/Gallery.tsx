@@ -9,7 +9,7 @@ export default function Gallery() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full">
         <div className="rounded-xl overflow-hidden shadow-lg group relative">
           <Image 
-            src="/images/reddog1.png" 
+            src="/images/korean-hotdog.webp" 
             alt="Korean Hotdog" 
             width={400} 
             height={300} 
@@ -21,7 +21,7 @@ export default function Gallery() {
         </div>
         <div className="rounded-xl overflow-hidden shadow-lg group relative">
           <Image 
-            src="/images/reddog1.png" 
+            src="/images/topokki.jpg" 
             alt="Topokki" 
             width={400} 
             height={300} 
@@ -33,7 +33,7 @@ export default function Gallery() {
         </div>
         <div className="rounded-xl overflow-hidden shadow-lg group relative">
           <Image 
-            src="/images/reddog1.png" 
+            src="/images/korean-snack.jpg" 
             alt="Korean Snack" 
             width={400} 
             height={300} 

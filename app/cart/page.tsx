@@ -6,10 +6,13 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/context/CartContext"
+import { useAlert } from "@/context/AlertContext"
 import { ArrowLeft, Trash2, Search, MapPin, ChevronDown, ChevronUp, X, AlertTriangle, ShoppingCart, Utensils, FileText, User, CreditCard, Lock, Clock } from "lucide-react"
 import MidtransPayment from "@/components/MidtransPayment"
 import { generateOrderId, formatMidtransItems, formatCustomerDetails } from "@/utils/midtrans"
 import { supabase } from "@/utils/supabase/supabaseClient"  // Pastikan mengimpor supabase client
+import FormAlert from "@/components/FormAlert"
+import ConfirmDialog from "@/components/ConfirmDialog"
 
 // Definisi tipe outlet
 type Outlet = {
@@ -22,6 +25,7 @@ type Outlet = {
 export default function CartPage() {
   const router = useRouter()
   const { cart, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart()
+  const { showError, showWarning, showSuccess, showInfo } = useAlert()
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [selectedOutlet, setSelectedOutlet] = useState<Outlet | null>(null)
   const [isOutletDropdownOpen, setIsOutletDropdownOpen] = useState(false)
@@ -36,9 +40,12 @@ export default function CartPage() {
   const [email, setEmail] = useState("")
   const [pickupTime, setPickupTime] = useState("")
   const [isAttemptedCheckout, setIsAttemptedCheckout] = useState(false)
-  const [outlets, setOutlets] = useState<Outlet[]>([])  // State untuk menyimpan outlet yang diambil
+  const [outlets, setOutlets] = useState<Outlet[]>([]) // State untuk menyimpan outlet yang diambil
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showClearCartDialog, setShowClearCartDialog] = useState(false)
+  const [showRemoveItemDialog, setShowRemoveItemDialog] = useState(false)
+  const [itemToRemove, setItemToRemove] = useState<{id: string, name: string} | null>(null)
 
   // Generate atau ambil session ID dari localStorage untuk privacy
   useEffect(() => {
@@ -105,36 +112,61 @@ export default function CartPage() {
       minimumFractionDigits: 0,
     }).format(price)
   }
-
   const handleCheckout = async () => {
     setIsAttemptedCheckout(true)
 
+    // Validasi form dengan alert yang lebih user-friendly
     if (!selectedOutlet) {
-      alert("Silakan pilih outlet untuk pickup ya!")
+      showWarning("Silakan pilih outlet untuk pickup terlebih dahulu", "Outlet Belum Dipilih")
       return
     }
 
-    if (!buyerName) {
-      alert("Jangan lupa masukkan nama kamu!")
+    if (!buyerName.trim()) {
+      showError("Nama lengkap wajib diisi untuk melanjutkan pesanan", "Nama Belum Diisi")
       return
     }
 
-    if (!phoneNumber) {
-      alert("Nomor HP belum diisi nih!")
+    if (!phoneNumber.trim()) {
+      showError("Nomor HP diperlukan untuk konfirmasi pesanan", "Nomor HP Belum Diisi")
       return
     }
 
-    if (!email) {
-      alert("Email kamu belum diisi!")
+    // Validasi format nomor HP
+    const phoneRegex = /^(\+62|62|0)[0-9]{9,13}$/
+    if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
+      showError("Format nomor HP tidak valid. Contoh: +6281234567890", "Format Nomor HP Salah")
+      return
+    }
+
+    if (!email.trim()) {
+      showError("Alamat email diperlukan untuk pengiriman invoice", "Email Belum Diisi")
+      return
+    }
+
+    // Validasi format email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      showError("Format email tidak valid. Contoh: nama@email.com", "Format Email Salah")
       return
     }
 
     if (!pickupTime) {
-      alert("Pilih waktu pickup dulu ya!")
+      showError("Pilih waktu pickup yang sesuai dengan jadwal kamu", "Waktu Pickup Belum Dipilih")
+      return
+    }
+
+    // Validasi waktu pickup (minimal 30 menit dari sekarang)
+    const selectedTime = new Date(pickupTime)
+    const minTime = new Date()
+    minTime.setMinutes(minTime.getMinutes() + 30)
+    
+    if (selectedTime < minTime) {
+      showWarning("Waktu pickup minimal 30 menit dari sekarang", "Waktu Pickup Terlalu Cepat")
       return
     }
 
     setIsCheckingOut(true)
+    showInfo("Sedang memproses pesanan...", "Mohon Tunggu")
 
     try {
       // Generate a unique order ID
@@ -158,31 +190,36 @@ export default function CartPage() {
           amount: getTotalPrice(),
           customerDetails,
           items,
-          outletId: selectedOutlet.id,
-          outletName: selectedOutlet.name,
-          buyerName: buyerName,          phoneNumber: phoneNumber,
+          outletId: selectedOutlet.id,          outletName: selectedOutlet.name,
+          buyerName: buyerName,
+          phoneNumber: phoneNumber,
           email: email,
           pickupTime: new Date(pickupTime).toISOString(),
           userSessionId: userSessionId, // Include user session for privacy
-        }),
-      })
+        }),      })
 
       const data = await response.json()
 
       if (!data.success) {
         throw new Error(data.message || "Gagal memproses pembayaran")
-      }      // Store order details for later use when payment succeeds
+      }
+
+      // Store order details for later use when payment succeeds
       setOrderDetails(data.order_details)
       setOrderId(data.order_details.id) // Set orderId immediately from order details
 
       console.log("Payment token created, order details stored:", data.order_details)
+      showSuccess("Pesanan berhasil dibuat! Silakan lanjutkan pembayaran", "Berhasil")
 
       // Set the payment token to trigger the Midtrans Snap popup
       setPaymentToken(data.token)
     } catch (error) {
       console.error("Checkout error:", error)
       setIsCheckingOut(false)
-      alert(`Oops! Ada kesalahan: ${error instanceof Error ? error.message : "Terjadi kesalahan"}`)
+      showError(
+        `${error instanceof Error ? error.message : "Terjadi kesalahan tidak terduga"}`,
+        "Gagal Memproses Pesanan"
+      )
     }
   }
   const handlePaymentClose = () => {
@@ -273,16 +310,44 @@ export default function CartPage() {
     setIsCheckingOut(false)
     router.push("/payment/failed")
   }
+  const handleRemoveItem = (itemId: string, itemName: string) => {
+    setItemToRemove({ id: itemId, name: itemName })
+    setShowRemoveItemDialog(true)
+  }
 
-  const handleSelectOutlet = (outlet: Outlet) => {
-    setSelectedOutlet(outlet)
-    setIsOutletDropdownOpen(false)
-    setSearchQuery("")
+  const confirmRemoveItem = () => {
+    if (itemToRemove) {
+      removeFromCart(itemToRemove.id)
+      showSuccess(`${itemToRemove.name} telah dihapus dari keranjang`, "Item Dihapus")
+      setShowRemoveItemDialog(false)
+      setItemToRemove(null)
+    }
   }
 
   const handleClearOutlet = (e: React.MouseEvent) => {
     e.stopPropagation()
     setSelectedOutlet(null)
+    showInfo("Pilihan outlet telah dihapus", "Outlet Dibersihkan")
+  }
+
+  const handleSelectOutlet = (outlet: Outlet) => {
+    setSelectedOutlet(outlet)
+    setIsOutletDropdownOpen(false)
+    setSearchQuery("")
+    showSuccess(`Outlet ${outlet.name} telah dipilih`, "Outlet Terpilih")
+  }
+  const handleClearCart = () => {
+    if (cart.length === 0) {
+      showInfo("Keranjang sudah kosong", "Keranjang Kosong")
+      return
+    }
+    setShowClearCartDialog(true)
+  }
+
+  const confirmClearCart = () => {
+    clearCart()
+    showSuccess("Keranjang telah dikosongkan", "Berhasil")
+    setShowClearCartDialog(false)
   }
 
   if (loading) {
@@ -415,7 +480,7 @@ export default function CartPage() {
                           </div>
                         </div>
                         <button
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => handleRemoveItem(item.id, item.name)}
                           className="text-red-500 hover:text-red-700 p-2 hover:bg-red-100 rounded-full transition-all duration-300"
                           aria-label="Hapus item"
                         >
@@ -472,12 +537,8 @@ export default function CartPage() {
                     placeholder="Masukkan nama lengkap kamu"
                     className={`w-full px-4 py-3 border ${!buyerName && isAttemptedCheckout ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300`}
                     required
-                  />
-                  {!buyerName && isAttemptedCheckout && (
-                    <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                      <AlertTriangle size={16} />
-                      Jangan lupa isi nama lengkap ya
-                    </p>
+                  />                  {!buyerName && isAttemptedCheckout && (
+                    <FormAlert type="error" message="Jangan lupa isi nama lengkap ya" />
                   )}
                 </div>
 
@@ -491,12 +552,8 @@ export default function CartPage() {
                     placeholder="Masukkan nomor HP (contoh: +62812345678)"
                     className={`w-full px-4 py-3 border ${!phoneNumber && isAttemptedCheckout ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300`}
                     required
-                  />
-                  {!phoneNumber && isAttemptedCheckout && (
-                    <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                      <AlertTriangle size={16} />
-                      Nomor HP belum diisi nih
-                    </p>
+                  />                  {!phoneNumber && isAttemptedCheckout && (
+                    <FormAlert type="error" message="Nomor HP belum diisi nih" />
                   )}
                 </div>
 
@@ -510,12 +567,8 @@ export default function CartPage() {
                     placeholder="Masukkan alamat email kamu"
                     className={`w-full px-4 py-3 border ${!email && isAttemptedCheckout ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300`}
                     required
-                  />
-                  {!email && isAttemptedCheckout && (
-                    <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                      <AlertTriangle size={16} />
-                      Email belum diisi ya
-                    </p>
+                  />                  {!email && isAttemptedCheckout && (
+                    <FormAlert type="error" message="Email belum diisi ya" />
                   )}
                 </div>
               </div>
@@ -618,12 +671,8 @@ export default function CartPage() {
                         </div>
                       </div>
                     )}
-                  </div>
-                  {!selectedOutlet && isAttemptedCheckout && (
-                    <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                      <AlertTriangle size={16} />
-                      Pilih outlet pickup dulu ya
-                    </p>
+                  </div>                  {!selectedOutlet && isAttemptedCheckout && (
+                    <FormAlert type="warning" message="Pilih outlet pickup dulu ya" />
                   )}
                 </div>
 
@@ -637,12 +686,8 @@ export default function CartPage() {
                     min={getMinPickupTime()}
                     className={`w-full px-4 py-3 border ${!pickupTime && isAttemptedCheckout ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-300`}
                     required
-                  />
-                  {!pickupTime && isAttemptedCheckout && (
-                    <p className="mt-2 text-sm text-red-500 flex items-center gap-1">
-                      <AlertTriangle size={16} />
-                      Pilih waktu pickup dulu ya
-                    </p>
+                  />                  {!pickupTime && isAttemptedCheckout && (
+                    <FormAlert type="warning" message="Pilih waktu pickup dulu ya" />
                   )}
                   <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
                     <Clock size={14} />
@@ -674,7 +719,7 @@ export default function CartPage() {
                 </button>
 
                 <button
-                  onClick={clearCart}
+                  onClick={handleClearCart}
                   className="w-full border-2 border-red-300 text-red-600 py-3 rounded-xl font-semibold hover:bg-red-50 hover:border-red-400 transition-all duration-300 flex items-center justify-center gap-2"
                 >
                   <Trash2 size={20} />
@@ -691,11 +736,37 @@ export default function CartPage() {
             <h3 className="text-lg font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
               <Lock size={20} className="text-red-600" />
               Pembayaran Aman
-            </h3>
-            <p className="text-gray-600 text-sm">Informasi pembayaran kamu diproses dengan aman melalui Midtrans. Kami tidak pernah menyimpan detail pembayaran kamu.</p>
+            </h3>            <p className="text-gray-600 text-sm">Informasi pembayaran kamu diproses dengan aman melalui Midtrans. Kami tidak pernah menyimpan detail pembayaran kamu.</p>
           </div>
         </div>
       </div>
+
+      {/* Remove Item Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showRemoveItemDialog}
+        onClose={() => {
+          setShowRemoveItemDialog(false)
+          setItemToRemove(null)
+        }}
+        onConfirm={confirmRemoveItem}
+        title="Hapus Item dari Keranjang"
+        message={`Apakah Anda yakin ingin menghapus "${itemToRemove?.name}" dari keranjang belanja?`}
+        confirmText="Ya, Hapus Item"
+        cancelText="Batal"
+        type="warning"
+      />
+
+      {/* Clear Cart Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showClearCartDialog}
+        onClose={() => setShowClearCartDialog(false)}
+        onConfirm={confirmClearCart}
+        title="Kosongkan Keranjang"
+        message={`Apakah Anda yakin ingin mengosongkan seluruh keranjang belanja? Semua ${cart.length} item akan dihapus.`}
+        confirmText="Ya, Kosongkan Keranjang"
+        cancelText="Batal"
+        type="danger"
+      />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/utils/supabase/client"
+import { useAlert } from "@/context/AlertContext"
 import { Loader2, Clock, MapPin, ChevronRight, CheckCircle, XCircle, AlertTriangle, Package } from "lucide-react"
 
 type Order = {
@@ -21,6 +22,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true)
   const [showBackToTop, setShowBackToTop] = useState(false)
   const [userSessionId, setUserSessionId] = useState<string>("")
+  const { showError, showInfo, showWarning } = useAlert()
   const router = useRouter()
   const supabase = createClient()
 
@@ -43,10 +45,10 @@ export default function OrdersPage() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
-
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
+
   useEffect(() => {
     async function fetchOrders() {
       if (!userSessionId) return
@@ -68,15 +70,20 @@ export default function OrdersPage() {
 
         console.log(`Found ${data?.length || 0} orders for this user`)
         setOrders(data || [])
+        
+        if (!data || data.length === 0) {
+          showInfo("Belum ada riwayat pesanan. Yuk pesan makanan favorit kamu!", "Belum Ada Pesanan")
+        }
       } catch (error) {
         console.error("Error fetching orders:", error)
+        showError("Gagal memuat riwayat pesanan. Silakan coba lagi nanti.", "Error Memuat Data")
       } finally {
         setLoading(false)
       }
     }
 
     fetchOrders()
-  }, [supabase, userSessionId])
+  }, [supabase, userSessionId, showError, showInfo])
 
   // Format price to Indonesian Rupiah
   const formatPrice = (price: number) => {
