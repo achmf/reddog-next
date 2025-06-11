@@ -2,19 +2,21 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useAlert } from "@/context/AlertContext"
 import { Loader2 } from "lucide-react"
 
 export default function PaymentSuccessPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const orderId = searchParams.get("order_id")
+  const { showSuccess, showInfo, showError } = useAlert()
   const [isRedirecting, setIsRedirecting] = useState(true)
   const [isCheckingOrder, setIsCheckingOrder] = useState(false)
 
-  useEffect(() => {
-    const handleRedirect = async () => {
+  useEffect(() => {    const handleRedirect = async () => {
       if (orderId) {
         console.log("Payment success - checking order:", orderId)
+        showSuccess("Pembayaran berhasil! Sedang memverifikasi pesanan...", "Pembayaran Berhasil")
         setIsCheckingOrder(true)
         
         // Wait a moment for the order to be created
@@ -27,18 +29,22 @@ export default function PaymentSuccessPage() {
           
           if (data.success && data.order_exists) {
             console.log("Order found in database, redirecting to order details")
+            showInfo("Pesanan ditemukan. Mengarahkan ke detail pesanan...", "Pesanan Ditemukan")
             router.push(`/orders/${orderId}`)
           } else {
             console.log("Order not found in database, redirecting to orders list")
+            showInfo("Mengarahkan ke riwayat pesanan...", "Memproses")
             router.push("/orders")
           }
         } catch (error) {
           console.error("Error checking order status:", error)
+          showError("Gagal memverifikasi pesanan, namun pembayaran sudah berhasil", "Error Verifikasi")
           router.push(`/orders/${orderId}`) // Try anyway
         }
         
         setIsCheckingOrder(false)
       } else {
+        showInfo("Mengarahkan ke riwayat pesanan dalam 3 detik...", "Pembayaran Selesai")
         // If no order ID is provided, redirect to the order history page after a short delay
         const timer = setTimeout(() => {
           router.push("/orders")

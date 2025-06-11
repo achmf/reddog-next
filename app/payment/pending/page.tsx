@@ -2,18 +2,20 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useAlert } from "@/context/AlertContext"
 import { Loader2 } from "lucide-react"
 
 export default function PaymentPendingPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const orderId = searchParams.get("order_id")
+  const { showInfo, showError, showWarning } = useAlert()
   const [isChecking, setIsChecking] = useState(true)
   const [checkAttempts, setCheckAttempts] = useState(0)
 
-  useEffect(() => {
-    const checkPaymentStatus = async () => {
+  useEffect(() => {    const checkPaymentStatus = async () => {
       if (!orderId) {
+        showWarning("Order ID tidak ditemukan. Anda akan diarahkan ke halaman pesanan.", "Order ID Tidak Valid")
         setTimeout(() => router.push("/orders"), 3000)
         return
       }
@@ -35,6 +37,7 @@ export default function PaymentPendingPage() {
               (transaction_status === "capture" && fraud_status === "accept")) {
             
             console.log("Payment successful, checking if order exists in database")
+            showInfo("Pembayaran berhasil! Mengarahkan ke halaman sukses...", "Pembayaran Berhasil")
             
             // Check if order exists in our database
             if (!data.order_exists) {
@@ -48,6 +51,7 @@ export default function PaymentPendingPage() {
                      transaction_status === "cancel" || 
                      transaction_status === "expire") {
             // Payment failed - redirect to failed page
+            showError("Pembayaran gagal atau dibatalkan", "Pembayaran Gagal")
             router.push("/payment/failed")
             return
           }

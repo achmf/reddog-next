@@ -1,9 +1,17 @@
 "use client"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAlert } from "@/context/AlertContext"
 import Link from "next/link"
 
 export default function PaymentFailedPage() {
   const router = useRouter()
+  const { showError, showInfo } = useAlert()
+
+  useEffect(() => {
+    showError("Pembayaran gagal atau dibatalkan. Silakan coba lagi.", "Pembayaran Gagal")
+    showInfo("Keranjang belanja masih tersimpan jika ingin mencoba lagi", "Info")
+  }, [showError, showInfo])
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
@@ -19,20 +27,20 @@ export default function PaymentFailedPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Payment Failed</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">Pembayaran Gagal</h1>
         <p className="text-gray-600 mb-6">
-          We couldn't process your payment. Please try again or contact customer support.
+          Pembayaran tidak dapat diproses. Silakan coba lagi atau hubungi customer service jika masalah berlanjut.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/cart">
-            <button className="bg-navy text-white px-6 py-2 rounded-full hover:bg-red-600 transition w-full">
-              Return to Cart
+            <button className="bg-red-500 text-white px-6 py-2 rounded-full hover:bg-red-600 transition w-full">
+              Kembali ke Keranjang
             </button>
           </Link>
           <Link href="/menu">
-            <button className="border border-navy text-navy px-6 py-2 rounded-full hover:bg-navy hover:text-white transition w-full">
-              Browse Menu
+            <button className="border border-red-500 text-red-500 px-6 py-2 rounded-full hover:bg-red-500 hover:text-white transition w-full">
+              Lihat Menu
             </button>
           </Link>
         </div>

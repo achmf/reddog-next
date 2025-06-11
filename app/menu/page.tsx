@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { useAlert } from "@/context/AlertContext";
 import MenuSection from "@/components/Menu/MenuSection";
 import CartBar from "@/components/Menu/CartBar";
 import MenuCardSkeleton from "@/components/Menu/MenuCardSkeleton";
@@ -25,6 +26,7 @@ export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const { showError, showSuccess, showInfo } = useAlert();
 
   // Handle scroll for back to top button
   useEffect(() => {
@@ -71,24 +73,31 @@ export default function MenuPage() {
       color: "from-red-500 to-red-500",
     },
   ];
-
   useEffect(() => {
     const fetchMenus = async () => {
-      const supabase = await createClient();
+      try {
+        const supabase = await createClient();
+        const { data, error } = await supabase.from("menus").select("*");
 
-      const { data, error } = await supabase.from("menus").select("*");
-
-      if (error) {
-        console.error("Error fetching menus:", error);
-      } else {
-        setMenus(data as MenuType[]);
+        if (error) {
+          console.error("Error fetching menus:", error);
+          showError("Gagal memuat menu. Silakan coba lagi nanti.", "Error Memuat Menu");
+        } else {
+          setMenus(data as MenuType[]);
+          if (data?.length === 0) {
+            showInfo("Belum ada menu yang tersedia saat ini", "Menu Kosong");
+          }
+        }
+      } catch (error) {
+        console.error("Unexpected error:", error);
+        showError("Terjadi kesalahan tidak terduga", "Error");
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     fetchMenus();
-  }, []); // Filter menus by category and search query
+  }, [showError, showInfo]);// Filter menus by category and search query
   const getMenusByCategory = (category: string) => {
     let filtered = menus;
 

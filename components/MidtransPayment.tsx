@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { useAlert } from "@/context/AlertContext"
 
 interface MidtransPaymentProps {
   token: string
@@ -21,6 +22,7 @@ declare global {
 
 const MidtransPayment = ({ token, onClose, onSuccess, onError, onPending }: MidtransPaymentProps) => {
   const snapContainerRef = useRef<HTMLDivElement>(null)
+  const { showWarning, showError } = useAlert()
 
   useEffect(() => {
     // Load the Snap.js library
@@ -42,6 +44,7 @@ const MidtransPayment = ({ token, onClose, onSuccess, onError, onPending }: Midt
             onError(error)
           },
           onClose: () => {
+            showWarning("Pembayaran dibatalkan. Pesanan belum diproses.", "Pembayaran Dibatalkan")
             onClose()
           },
         })

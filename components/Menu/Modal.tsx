@@ -3,7 +3,9 @@
 import type React from "react"
 import { type FC, useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
+import { useAlert } from "@/context/AlertContext"
 import { Sparkles, Flame, Plus, Droplets, Coffee, Snowflake, FileText, Hash } from "lucide-react"
+import ConfirmDialog from "@/components/ConfirmDialog"
 
 type ModalProps = {
   isOpen: boolean
@@ -23,6 +25,7 @@ type ModalProps = {
 
 const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) => {
   const [isClient, setIsClient] = useState(false)
+  const { showWarning, showInfo } = useAlert()
   const [freeSauce, setFreeSauce] = useState<string[]>([])
   const [topping, setTopping] = useState<string[]>([])
   const [spicyLevel, setSpicyLevel] = useState<string>("")
@@ -31,6 +34,7 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
   const [iceLevel, setIceLevel] = useState<string>("")
   const [specialInstructions, setSpecialInstructions] = useState<string>("")
   const [quantity, setQuantity] = useState<number>(1)
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
@@ -68,7 +72,6 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
     }
   }, [isOpen, closeModal])
 
-  // ...existing handlers...
   const handleFreeSauceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setFreeSauce((prev) => {
@@ -81,7 +84,6 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
       return prev
     })
   }
-
   const handleToppingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setTopping((prev) => {
@@ -93,6 +95,11 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
       }
       return prev
     })
+    
+    // Show warning outside of state setter
+    if (!topping.includes(value) && topping.length >= 2) {
+      showWarning("Maksimal 2 topping yang bisa dipilih", "Batas Topping")
+    }
   }
 
   const handleSpicyLevelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,10 +127,40 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
     setIceLevel((prev) => (prev === value ? "" : value))
   }
 
+  const handleCancelModal = () => {
+    // Cek apakah ada perubahan yang belum disimpan
+    const hasChanges = freeSauce.length > 0 || topping.length > 0 || spicyLevel || 
+                      addOnToppoki.length > 0 || size || iceLevel || 
+                      specialInstructions.trim() || quantity > 1
+
+    if (hasChanges) {
+      setShowCancelDialog(true)
+    } else {
+      closeModal()
+    }
+  }
+
+  const confirmCancelModal = () => {
+    closeModal()
+    showInfo("Kustomisasi dibatalkan", "Dibatalkan")
+    setShowCancelDialog(false)
+  }
+
   const handleIncreaseQuantity = () => setQuantity((prev) => prev + 1)
   const handleDecreaseQuantity = () => setQuantity((prev) => (prev > 1 ? prev - 1 : prev))
-
+  
   const handleAddToCart = () => {
+    // Validasi minimal untuk kategori tertentu
+    if (category.toLowerCase() === 'minuman' && !iceLevel) {
+      showWarning("Pilih level es untuk minuman", "Pilihan Belum Lengkap")
+      return
+    }
+    
+    if (quantity < 1) {
+      showWarning("Jumlah pesanan minimal 1", "Kuantitas Tidak Valid")
+      return
+    }
+
     handleAddOns({
       freeSauce,
       topping,
@@ -135,9 +172,17 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
       iceLevel,
     })
     closeModal()
+    
+    const addOnsSelected = []
+    if (freeSauce.length > 0) addOnsSelected.push(`${freeSauce.length} saus`)
+    if (topping.length > 0) addOnsSelected.push(`${topping.length} topping`)
+    if (spicyLevel) addOnsSelected.push(`level ${spicyLevel}`)
+    
+    if (addOnsSelected.length > 0) {
+      showInfo(`Item berhasil dikustomisasi dengan ${addOnsSelected.join(', ')}`, "Kustomisasi Berhasil")
+    }
   }
 
-  // ...existing renderOptionCard function...
   const renderOptionCard = (
     title: string, 
     options: string[], 
@@ -196,7 +241,6 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
 
   if (!isClient || !isOpen) return null
 
-  // Use createPortal to render modal at document.body level
   return createPortal(
     <div className="fixed inset-0 flex justify-center items-center bg-black/60 backdrop-blur-sm z-[9999] p-4">
       <div ref={modalRef} className="bg-white rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl border border-gray-100 animate-fadeIn">
@@ -320,31 +364,29 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
               <div className="text-right text-xs text-gray-400 mt-2">
                 {specialInstructions.length}/200 karakter
               </div>
-            </div>
-
-            {/* Quantity Section */}
+            </div>            {/* Quantity Section */}
             <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
               <div className="flex items-center gap-3 mb-4">
                 <Hash className="w-6 h-6 text-primary" />
                 <h3 className="text-lg font-semibold text-gray-800">Jumlah</h3>
               </div>
-              <div className="flex items-center justify-center gap-4">
-                <button 
-                  onClick={handleDecreaseQuantity} 
-                  className="w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center font-bold text-xl transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={quantity <= 1}
-                >
-                  −
-                </button>
-                <div className="bg-white border-2 border-gray-200 rounded-lg px-6 py-3 min-w-[80px] text-center">
-                  <span className="text-2xl font-bold text-gray-800">{quantity}</span>
+              <div className="flex items-center justify-center">
+                <div className="flex items-center gap-2 bg-white rounded-full px-3 py-1 border border-red-200">
+                  <button 
+                    onClick={handleDecreaseQuantity} 
+                    className="text-red-500 hover:text-red-700 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={quantity <= 1}
+                  >
+                    -
+                  </button>
+                  <span className="font-semibold text-gray-800 min-w-[24px] text-center text-xl">{quantity}</span>
+                  <button 
+                    onClick={handleIncreaseQuantity} 
+                    className="text-red-500 hover:text-red-700 font-bold text-lg"
+                  >
+                    +
+                  </button>
                 </div>
-                <button 
-                  onClick={handleIncreaseQuantity} 
-                  className="w-12 h-12 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-xl transition-colors duration-200 shadow-md hover:shadow-lg"
-                >
-                  +
-                </button>
               </div>
             </div>
           </div>
@@ -354,7 +396,7 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
         <div className="border-t border-gray-200 p-6 bg-gray-50">
           <div className="flex gap-4">
             <button 
-              onClick={closeModal} 
+              onClick={handleCancelModal} 
               className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-4 px-6 rounded-xl font-semibold text-lg transition-colors duration-200"
             >
               Batal
@@ -368,6 +410,18 @@ const Modal: FC<ModalProps> = ({ isOpen, closeModal, handleAddOns, category }) =
           </div>
         </div>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showCancelDialog}
+        onClose={() => setShowCancelDialog(false)}
+        onConfirm={confirmCancelModal}
+        title="Batalkan Kustomisasi"
+        message="Apakah Anda yakin ingin membatalkan kustomisasi ini? Semua pilihan add-on yang telah dipilih akan hilang."
+        confirmText="Ya, Batalkan"
+        cancelText="Tidak, Lanjutkan Edit"
+        type="warning"
+      />
     </div>,
     document.body
   )

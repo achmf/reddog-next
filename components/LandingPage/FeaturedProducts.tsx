@@ -1,8 +1,14 @@
 "use client"
 
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 export default function FeaturedProducts() {
+  const router = useRouter()
+
+  const handleOrderClick = () => {
+    router.push("/menu")
+  }
   return (
     <section className="w-full max-w-6xl py-16 px-4">
       <h3 className="text-3xl font-bold text-red-500 mb-12 text-center">Menu Terpopuler</h3>
@@ -10,7 +16,7 @@ export default function FeaturedProducts() {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
           <div className="relative overflow-hidden">
             <Image 
-              src="/images/reddog1.png" 
+              src="/images/korean-hotdog-special.webp" 
               alt="Korean Hotdog Special" 
               width={400} 
               height={250} 
@@ -25,7 +31,10 @@ export default function FeaturedProducts() {
             <p className="text-gray-600 mb-4">Hotdog Korea dengan cheese mozzarella yang melimpah dan saus spesial</p>
             <div className="flex justify-between items-center">
               <span className="text-2xl font-bold text-red-500">Rp 25.000</span>
-              <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+              <button 
+                onClick={handleOrderClick}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+              >
                 Pesan
               </button>
             </div>
@@ -35,7 +44,7 @@ export default function FeaturedProducts() {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
           <div className="relative overflow-hidden">
             <Image 
-              src="/images/reddog1.png" 
+              src="/images/topokki.jpg" 
               alt="Topokki Original" 
               width={400} 
               height={250} 
@@ -50,7 +59,10 @@ export default function FeaturedProducts() {
             <p className="text-gray-600 mb-4">Rice cake Korea dengan saus gochujang otentik yang pedas manis</p>
             <div className="flex justify-between items-center">
               <span className="text-2xl font-bold text-red-500">Rp 20.000</span>
-              <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+              <button 
+                onClick={handleOrderClick}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+              >
                 Pesan
               </button>
             </div>
@@ -60,7 +72,7 @@ export default function FeaturedProducts() {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
           <div className="relative overflow-hidden">
             <Image 
-              src="/images/reddog1.png" 
+              src="/images/korean-snack-combo.jpg" 
               alt="Korean Snack Combo" 
               width={400} 
               height={250} 
@@ -75,7 +87,10 @@ export default function FeaturedProducts() {
             <p className="text-gray-600 mb-4">Kombinasi berbagai snack Korea dalam satu paket hemat</p>
             <div className="flex justify-between items-center">
               <span className="text-2xl font-bold text-red-500">Rp 35.000</span>
-              <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+              <button 
+                onClick={handleOrderClick}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+              >
                 Pesan
               </button>
             </div>

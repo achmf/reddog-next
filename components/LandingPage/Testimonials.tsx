@@ -17,7 +17,7 @@ const testimonials: Testimonial[] = [
     name: "Ayu Putri",
     location: "Jakarta",
     text: "Reddog's Korean Hotdog is the best! The cheese pull is amazing and the taste is authentic. I've been ordering here for months and never disappointed!",
-    image: "/images/reddog1.png",
+    image: "/images/profile.png",
     rating: 5,
     order: "Korean Hotdog Cheese"
   },
@@ -25,7 +25,7 @@ const testimonials: Testimonial[] = [
     name: "Budi Santoso",
     location: "Bandung", 
     text: "Topokki-nya lembut dan sausnya mantap! Pesan online gampang banget. Harga juga masih terjangkau untuk kualitas sebagus ini.",
-    image: "/images/reddog1.png",
+    image: "/images/profile.png",
     rating: 5,
     order: "Topokki Original"
   },
@@ -33,7 +33,7 @@ const testimonials: Testimonial[] = [
     name: "Siti Nurhaliza",
     location: "Surabaya",
     text: "Snack Korea favorit keluarga! Anak-anak suka banget hotdognya. Fresh from kitchen dan packaging-nya juga rapi.",
-    image: "/images/reddog1.png",
+    image: "/images/profile.png",
     rating: 4,
     order: "Korean Snack Combo"
   },
@@ -41,7 +41,7 @@ const testimonials: Testimonial[] = [
     name: "Dian Kristiawan", 
     location: "Yogyakarta",
     text: "Pelayanan cepat dan rasa authentic Korean! Suka banget sama mozarella hotdog-nya. Definitely will order again!",
-    image: "/images/reddog1.png",
+    image: "/images/profile.png",
     rating: 5,
     order: "Mozarella Hotdog"
   }
@@ -72,22 +72,19 @@ export default function Testimonials() {
               <div className="flex flex-col md:flex-row items-center gap-8">
                 {/* Customer image and info */}
                 <div className="flex-shrink-0 text-center">
-                  <div className="relative">
+                  <div className="flex flex-col items-center">
                     <Image 
                       src={testimonials[testimonialIdx].image} 
                       alt={testimonials[testimonialIdx].name} 
-                      width={120} 
-                      height={120} 
-                      className="rounded-full border-4 border-red-200 shadow-lg"
+                      width={80} 
+                      height={80} 
+                      className="rounded-full border-4 border-red-200 shadow-lg mb-4"
                     />
-                    <div className="absolute -bottom-2 -right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
-                      {testimonials[testimonialIdx].rating}⭐
+                    <h4 className="font-bold text-lg text-gray-800">{testimonials[testimonialIdx].name}</h4>
+                    <p className="text-red-500 font-medium">{testimonials[testimonialIdx].location}</p>
+                    <div className="bg-gray-100 rounded-full px-3 py-1 text-xs text-gray-600 mt-2 text-center">
+                      Ordered: {testimonials[testimonialIdx].order}
                     </div>
-                  </div>
-                  <h4 className="font-bold text-lg text-gray-800 mt-4">{testimonials[testimonialIdx].name}</h4>
-                  <p className="text-red-500 font-medium">{testimonials[testimonialIdx].location}</p>
-                  <div className="bg-gray-100 rounded-full px-3 py-1 text-xs text-gray-600 mt-2">
-                    Ordered: {testimonials[testimonialIdx].order}
                   </div>
                 </div>
                 
