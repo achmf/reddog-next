@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const snap = new midtransClient.Snap({
       // Set to true if you want Production Environment (accept real transaction).
       isProduction: false,
-      serverKey: process.env.MIDTRANS_SERVER_KEY || "SB-Mid-server-TvttKE1eMdnC4ZWlEVclI8V-",
+      serverKey: process.env.MIDTRANS_SERVER_KEY!,
       clientKey: "SB-Mid-client-wNIhXjTXVqUH5NY4",
     })
 

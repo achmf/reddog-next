@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     }    // Create Core API instance to check transaction status
     const coreApi = new midtransClient.CoreApi({
       isProduction: false,
-      serverKey: process.env.MIDTRANS_SERVER_KEY || "SB-Mid-server-TvttKE1eMdnC4ZWlEVclI8V-",
+      serverKey: process.env.MIDTRANS_SERVER_KEY!,
       clientKey: "SB-Mid-client-wNIhXjTXVqUH5NY4",
     })    // Get transaction status from Midtrans
     const transactionStatus = await coreApi.transaction.status(orderId)

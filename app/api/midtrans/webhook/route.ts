@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     // Verify signature (important for security)
     const signature = request.headers.get("x-signature")
     if (signature) {
-      const serverKey = process.env.MIDTRANS_SERVER_KEY || "SB-Mid-server-TvttKE1eMdnC4ZWlEVclI8V-"
+      const serverKey = process.env.MIDTRANS_SERVER_KEY!
       const hash = crypto
         .createHash("sha512")
         .update(`${body.order_id}${body.status_code}${body.gross_amount}${serverKey}`)
